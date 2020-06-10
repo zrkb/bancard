@@ -2,12 +2,15 @@
 
 namespace Bancard;
 
+use GuzzleHttp\Client;
+use Bancard\Http\ClientInterface;
+
 class Bancard
 {
     /**
-     * @var GuzzleHttp\Client
+     * @var Http\ClientInterface
      */
-    protected $http;
+    protected static $httpClient;
 
     /**
      * Private Key
@@ -24,6 +27,36 @@ class Bancard
     protected static $publicKey;
 
     /**
+     * Public Key
+     *
+     * @var bool
+     */
+    protected static $staging = false;
+
+    /**
+     * Sets the Private Key to be used for requests.
+     *
+     * @param string $http
+     * @return Http\ClientInterface
+     */
+    public static function setHttpClient(ClientInterface $httpClient)
+    {
+        self::$httpClient = $httpClient;
+    }
+
+    /**
+     * @return Client\ClientInterface
+     */
+    public static function httpClient()
+    {
+        if (!self::$httpClient) {
+            self::$httpClient = new Http\Client;
+        }
+
+        return self::$httpClient;
+    }
+
+    /**
      * Sets the Private Key to be used for requests.
      *
      * @param string $privateKey
@@ -38,7 +71,7 @@ class Bancard
      *
      * @return string
      */
-    public static function getPrivateKey()
+    public static function privateKey()
     {
         return self::$privateKey;
     }
@@ -58,15 +91,28 @@ class Bancard
      *
      * @return string
      */
-    public static function getPublicKey()
+    public static function publicKey()
     {
         return self::$publicKey;
     }
 
-    protected function token()
+    /**
+     * Sets the staging mode.
+     *
+     * @param bool $staging
+     */
+    public static function setStaging($staging)
     {
-        return md5(
-            self::$privateKey . implode( '', func_get_args())
-        );
+        self::$staging = $staging;
+    }
+
+    /**
+     * The staging mode.
+     *
+     * @return bool
+     */
+    public static function staging()
+    {
+        return self::$staging;
     }
 }

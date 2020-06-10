@@ -5,7 +5,7 @@ namespace Bancard\Util;
 class Token
 {
     /**
-     * Make a new token.
+     * Creates a single-use token that can be used with any API method.
      *
      * @return string
      */

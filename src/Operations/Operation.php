@@ -3,23 +3,22 @@
 namespace Bancard\Operations;
 
 use Bancard\Bancard;
-use GuzzleHttp\Client;
-use Bancard\Http\APIClient;
 use InvalidArgumentException;
 
 abstract class Operation
 {
-    use APIClient;
-
     /**
-     * Bancard base URI
-     *
      * @var string
      */
-    protected $baseUri = 'https://vpos.infonet.com.py:8888/';
+    protected $endpoint;
 
     /**
-     * Operation payload
+     * @var string
+     */
+    protected $method = 'POST';
+
+    /**
+     * Operation payload.
      *
      * @var array
      */
@@ -28,10 +27,6 @@ abstract class Operation
     public function __construct(array $payload)
     {
         $this->payload = $payload;
-
-        $this->http = new Client([
-            'base_uri' => $this->baseUri
-        ]);
     }
 
     /**
@@ -45,23 +40,37 @@ abstract class Operation
         return (new static($payload))->execute();
     }
 
+    /**
+     * Send request using an Http\ClientInterface object.
+     *
+     * @return mixed
+     */
     public function execute()
     {
-        return $this->request('post', $this->endpoint, $this->operationPayload());
+        return Bancard::httpClient()->request($this->method, $this->endpoint, $this->data());
     }
 
-    abstract protected function token();
-
-    public function operationPayload()
+    /**
+     * The data that should sent to make an operation.
+     *
+     * @return array
+     */
+    public function data()
     {
         $operationData = array_filter($this->payload + ['token' => $this->token()]);
 
         return [
-            'public_key' => Bancard::getPublicKey(),
+            'public_key' => Bancard::publicKey(),
             'operation' => $operationData,
         ];
     }
 
+    /**
+     * Return the value from the payload with the specified key.
+     *
+     * @param string $key
+     * @return mixed|null
+     */
     public function payload(string $key)
     {
         if (isset($this->payload[$key]) == false) {
@@ -70,4 +79,11 @@ abstract class Operation
 
         return $this->payload[$key];
     }
+
+    /**
+     * Make a new token.
+     *
+     * @return string
+     */
+    abstract protected function token();
 }
