@@ -54,20 +54,7 @@ abstract class Operation
 
     public function operationPayload()
     {
-        $default = [
-            'token'           => $this->token(),
-            'shop_process_id' => null,
-            'amount'          => null,
-            'description'     => null,
-            'currency'        => null,
-            'additional_data' => null,
-            'return_url'      => null,
-            'cancel_url'      => null,
-        ];
-
-        $operationData = array_filter(
-            array_merge($default, $this->payload)
-        );
+        $operationData = array_filter($this->payload + ['token' => $this->token()]);
 
         return [
             'public_key' => Bancard::getPublicKey(),
