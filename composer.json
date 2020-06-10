@@ -1,6 +1,6 @@
 {
     "name": "zrkb/bancard",
-    "description": "A minimal implementation for Bancard API",
+    "description": "A minimal implementation for Bancard API vPOS 2.0",
     "keywords": [
         "laravel",
         "bancard"
