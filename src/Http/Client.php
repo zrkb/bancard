@@ -2,10 +2,9 @@
 
 namespace Bancard\Http;
 
-use Bancard\Bancard;
 use GuzzleHttp\Client as GuzzleClient;
 
-class Client implements ClientInterface
+abstract class Client implements ClientInterface
 {
     /**
      * @var GuzzleHttp\ClientInterface
@@ -13,19 +12,21 @@ class Client implements ClientInterface
     private $http;
 
     /**
-     * Production base URL
+     * Sets the http client.
      *
-     * @var string
+     * @param string $http
+     * @return GuzzleHttp\ClientInterface
      */
-    protected $productionBaseUrl = 'https://vpos.infonet.com.py/';
+    public function setHttp($http)
+    {
+        $this->http = $http;
+    }
 
     /**
-     * Staging base URL
+     * Returns the http client.
      *
-     * @var string
+     * @return GuzzleHttp\ClientInterface
      */
-    protected $stagingBaseUrl = 'https://vpos.infonet.com.py:8888/';
-
     public function http()
     {
         if (!$this->http) {
@@ -45,7 +46,7 @@ class Client implements ClientInterface
      * @param array $params
      * @param array $headers
      * @return mixed
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function request(string $method, string $url, array $params = [], array $headers = [])
     {
@@ -56,34 +57,18 @@ class Client implements ClientInterface
             'debug' => false,
         ]);
 
-        $statusCode = $response->getStatusCode();
+        $body = json_decode((string) $response->getBody(), false, 512, JSON_THROW_ON_ERROR);
 
-        if ($statusCode >= 300) {
-            throw new \Exception("Failed to retrieve data. Code:" . $statusCode);
-        }
-
-        return json_decode((string) $response->getBody());
+        return $body;
     }
 
-    public function get(string $url, array $params = [])
+    public function get(string $url, array $params = [], array $headers = [])
     {
-        return $this->request('get', $url, $params);
+        return $this->request('get', $url, $params, $headers);
     }
 
-    public function post(string $url, array $params = [])
+    public function post(string $url, array $params = [], array $headers = [])
     {
-        return $this->request('post', $url, $params);
-    }
-
-    /**
-     * Base url for client.
-     *
-     * @return string
-     */
-    public function baseUri()
-    {
-        return Bancard::staging() ?
-                $this->stagingBaseUrl :
-                $this->productionBaseUrl;
+        return $this->request('post', $url, $params, $headers);
     }
 }

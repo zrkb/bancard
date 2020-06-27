@@ -2,15 +2,24 @@
 
 namespace Bancard;
 
-use GuzzleHttp\Client;
-use Bancard\Http\ClientInterface;
+use Bancard\Http\Client;
+use Bancard\Operations\SingleBuy;
 
-class Bancard
+class Bancard extends Client
 {
     /**
-     * @var Http\ClientInterface
+     * Production base URL
+     *
+     * @var string
      */
-    protected static $httpClient;
+    protected $productionBaseUrl = 'https://vpos.infonet.com.py/';
+
+    /**
+     * Staging base URL
+     *
+     * @var string
+     */
+    protected $stagingBaseUrl = 'https://vpos.infonet.com.py:8888/';
 
     /**
      * Private Key
@@ -32,29 +41,6 @@ class Bancard
      * @var bool
      */
     protected static $staging = false;
-
-    /**
-     * Sets the Private Key to be used for requests.
-     *
-     * @param string $http
-     * @return Http\ClientInterface
-     */
-    public static function setHttpClient(ClientInterface $httpClient)
-    {
-        self::$httpClient = $httpClient;
-    }
-
-    /**
-     * @return Client\ClientInterface
-     */
-    public static function httpClient()
-    {
-        if (!self::$httpClient) {
-            self::$httpClient = new Http\Client;
-        }
-
-        return self::$httpClient;
-    }
 
     /**
      * Sets the Private Key to be used for requests.
@@ -114,5 +100,22 @@ class Bancard
     public static function staging()
     {
         return self::$staging;
+    }
+
+    /**
+     * Base uri for client.
+     *
+     * @return string
+     */
+    public function baseUri()
+    {
+        return static::staging() ?
+                $this->stagingBaseUrl :
+                $this->productionBaseUrl;
+    }
+
+    public function singleBuy($payload)
+    {
+        return SingleBuy::make($payload);
     }
 }

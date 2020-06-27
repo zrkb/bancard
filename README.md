@@ -10,7 +10,7 @@
 
 ### Requirements
 
-* PHP >= 7.0
+* PHP >= 7.3
 
 ### Installing
 
@@ -26,21 +26,32 @@ $ composer require zrkb/bancard
 
 ```php
 use Bancard\Bancard;
-use Bancard\Operations\SingleBuy;
 use Bancard\Util\Currency;
 
 Bancard::setPrivateKey('PRIVATE_KEY');
 Bancard::setPublicKey('PUBLIC_KEY');
+Bancard::setStaging(true);
 
-$response = SingleBuy::make([
-    'shop_process_id' => 7777777,
+$bancard = new Bancard;
+
+$response = $bancard->singleBuy([
+    'shop_process_id' => 7777777, // MUST be an integer
+    'name' => 'My Product',
+    'description' => 'Product Description',
     'amount' => '10000.00', // two decimals required
     'currency' => Currency::PYG,
     'return_url' => 'https://app.test/return_url',
     'cancel_url' => 'https://app.test/cancel_url',
 ]);
+```
 
-var_dump($response);
+The above example will return:
+
+```json
+{
+    "status": "success",
+    "process_id": "KKt*PMyY88Jv88Wjrk7-"
+}
 ```
 
 ## Security

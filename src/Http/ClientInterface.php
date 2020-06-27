@@ -15,4 +15,11 @@ interface ClientInterface
      * @throws \Exception
      */
     public function request(string $method, string $url, array $params = [], array $headers = []);
+
+    /**
+     * Base uri for client.
+     *
+     * @return string
+     */
+    public function baseUri();
 }

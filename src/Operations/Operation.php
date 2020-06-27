@@ -47,7 +47,7 @@ abstract class Operation
      */
     public function execute()
     {
-        return Bancard::httpClient()->request($this->method, $this->endpoint, $this->data());
+        return (new Bancard)->request($this->method, $this->endpoint, $this->data());
     }
 
     /**
