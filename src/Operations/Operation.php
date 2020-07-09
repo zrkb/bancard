@@ -85,5 +85,5 @@ abstract class Operation
      *
      * @return string
      */
-    abstract protected function token();
+    abstract public function token();
 }

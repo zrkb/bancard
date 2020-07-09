@@ -17,7 +17,7 @@ class SingleBuy extends Operation
      *
      * @return string
      */
-    protected function token()
+    public function token()
     {
         return Token::make(
             Bancard::privateKey(),
