@@ -4,6 +4,8 @@ namespace Bancard;
 
 use Bancard\Http\Client;
 use Bancard\Operations\SingleBuy;
+use Bancard\Operations\SingleBuyConfirmation;
+use Bancard\Operations\SingleBuyRollback;
 
 class Bancard extends Client
 {
@@ -117,5 +119,15 @@ class Bancard extends Client
     public function singleBuy($payload)
     {
         return SingleBuy::make($payload);
+    }
+
+    public function singleBuyConfirmation($payload)
+    {
+        return SingleBuyConfirmation::make($payload);
+    }
+
+    public function singleBuyRollback($payload)
+    {
+        return SingleBuyRollback::make($payload);
     }
 }
