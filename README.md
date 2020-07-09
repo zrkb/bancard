@@ -22,7 +22,7 @@ $ composer require zrkb/bancard
 
 ### Usage
 
-##### Single Buy
+#### Single Buy Request
 
 ```php
 use Bancard\Bancard;
@@ -52,6 +52,22 @@ The above example will return:
     "status": "success",
     "process_id": "KKt*PMyY88Jv88Wjrk7-"
 }
+```
+
+#### Single Buy Confirmation
+
+```php
+$response = $bancard->singleBuyConfirmation([
+    'shop_process_id' => 7777777,
+]);
+```
+
+#### Single Buy Rollback
+
+```php
+$response = $bancard->singleBuyRollback([
+    'shop_process_id' => 7777777,
+]);
 ```
 
 ## Security
