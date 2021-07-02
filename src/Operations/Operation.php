@@ -7,24 +7,13 @@ use InvalidArgumentException;
 
 abstract class Operation
 {
-    /**
-     * @var string
-     */
-    protected $endpoint;
+    protected string $endpoint;
 
-    /**
-     * @var string
-     */
-    protected $method = 'POST';
+    protected string $method = 'POST';
 
-    /**
-     * Operation payload.
-     *
-     * @var array
-     */
-    protected $payload;
+    protected array $payload;
 
-    public function __construct(array $payload)
+    final public function __construct(array $payload)
     {
         $this->payload = $payload;
     }
@@ -32,10 +21,11 @@ abstract class Operation
     /**
      * Make a new operation.
      *
-     * @param $payload
-     * @return static
+     * @param array $payload
+     * 
+     * @return self
      */
-    public static function make($payload)
+    public static function make($payload): self
     {
         return (new static($payload))->execute();
     }
@@ -69,6 +59,7 @@ abstract class Operation
      * Return the value from the payload with the specified key.
      *
      * @param string $key
+     * 
      * @return mixed|null
      */
     public function payload(string $key)
@@ -85,5 +76,5 @@ abstract class Operation
      *
      * @return string
      */
-    abstract public function token();
+    abstract public function token(): string;
 }

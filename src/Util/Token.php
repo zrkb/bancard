@@ -9,9 +9,10 @@ class Token
      *
      * @return string
      */
-    public static function make()
+    public static function make(): string
     {
-        return md5(
+        return hash(
+            'sha256',
             implode('', func_get_args())
         );
     }

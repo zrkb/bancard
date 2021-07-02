@@ -5,19 +5,16 @@ namespace Bancard\Operations;
 use Bancard\Bancard;
 use Bancard\Util\Token;
 
-class SingleBuyConfirmation extends Operation
+class SingleBuyGetConfirmation extends Operation
 {
-    /**
-     * @var string
-     */
-    protected $endpoint = '/vpos/api/0.3/single_buy/confirmations';
+    protected string $endpoint = '/vpos/api/0.3/single_buy/confirmations';
 
     /**
      * Make a new token.
      *
      * @return string
      */
-    public function token()
+    public function token(): string
     {
         return Token::make(
             Bancard::privateKey(),

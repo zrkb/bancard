@@ -2,10 +2,12 @@
 
 namespace Bancard;
 
-use Bancard\Http\Client;
+use Bancard\Operations\Operation;
 use Bancard\Operations\SingleBuy;
-use Bancard\Operations\SingleBuyConfirmation;
+use Bancard\Operations\SingleBuyConfirm;
+use Bancard\Operations\SingleBuyGetConfirmation;
 use Bancard\Operations\SingleBuyRollback;
+use Zero\Http\Client;
 
 class Bancard extends Client
 {
@@ -48,6 +50,8 @@ class Bancard extends Client
      * Sets the Private Key to be used for requests.
      *
      * @param string $privateKey
+     * 
+     * @return void
      */
     public static function setPrivateKey($privateKey)
     {
@@ -59,7 +63,7 @@ class Bancard extends Client
      *
      * @return string
      */
-    public static function privateKey()
+    public static function privateKey(): string
     {
         return self::$privateKey;
     }
@@ -68,6 +72,8 @@ class Bancard extends Client
      * Sets the Public Key to be used for requests.
      *
      * @param string $publicKey
+     * 
+     * @return void
      */
     public static function setPublicKey($publicKey)
     {
@@ -79,7 +85,7 @@ class Bancard extends Client
      *
      * @return string
      */
-    public static function publicKey()
+    public static function publicKey(): string
     {
         return self::$publicKey;
     }
@@ -88,6 +94,8 @@ class Bancard extends Client
      * Sets the staging mode.
      *
      * @param bool $staging
+     * 
+     * @return void
      */
     public static function setStaging($staging)
     {
@@ -99,7 +107,7 @@ class Bancard extends Client
      *
      * @return bool
      */
-    public static function staging()
+    public static function staging(): bool
     {
         return self::$staging;
     }
@@ -109,24 +117,29 @@ class Bancard extends Client
      *
      * @return string
      */
-    public function baseUri()
+    public function baseUri(): string
     {
         return static::staging() ?
                 $this->stagingBaseUrl :
                 $this->productionBaseUrl;
     }
 
-    public function singleBuy($payload)
+    public function singleBuy(array $payload): Operation
     {
         return SingleBuy::make($payload);
     }
 
-    public function singleBuyConfirmation($payload)
+    public function singleBuyConfirm(array $payload): Operation
     {
-        return SingleBuyConfirmation::make($payload);
+        return SingleBuyConfirm::make($payload);
     }
 
-    public function singleBuyRollback($payload)
+    public function singleBuyGetConfirmation(array $payload): Operation
+    {
+        return SingleBuyGetConfirmation::make($payload);
+    }
+
+    public function singleBuyRollback(array $payload): Operation
     {
         return SingleBuyRollback::make($payload);
     }

@@ -7,17 +7,14 @@ use Bancard\Util\Token;
 
 class SingleBuyRollback extends Operation
 {
-    /**
-     * @var string
-     */
-    protected $endpoint = '/vpos/api/0.3/single_buy/rollback';
+    protected string $endpoint = '/vpos/api/0.3/single_buy/rollback';
 
     /**
      * Make a new token.
      *
      * @return string
      */
-    public function token()
+    public function token(): string
     {
         return Token::make(
             Bancard::privateKey(),
