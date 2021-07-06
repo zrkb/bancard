@@ -12,7 +12,7 @@ class Token
     public static function make(): string
     {
         return hash(
-            'sha256',
+            'md5',
             implode('', func_get_args())
         );
     }
