@@ -46,6 +46,11 @@ class Bancard extends Client
      */
     protected static $staging = false;
 
+    public function __construct(array $config = [])
+    {
+        parent::__construct($this->baseUri(), $config);
+    }
+
     /**
      * Sets the Private Key to be used for requests.
      *
