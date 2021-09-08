@@ -15,7 +15,7 @@
     "require": {
         "php": "^7.3 | ^8.0",
         "guzzlehttp/guzzle": "^6.3 | ^7.0",
-        "zrkb/php-http-client": "^0.3.1"
+        "zrkb/php-http-client": "^0.3.7"
     },
     "autoload": {
         "psr-4": {
