@@ -54,10 +54,20 @@ The above example will return:
 }
 ```
 
-#### Single Buy Confirmation
+#### Single Buy Confirm
 
 ```php
-$response = $bancard->singleBuyConfirmation([
+$response = $bancard->singleBuyConfirm([
+    'shop_process_id' => 7777777,
+    'amount' => '10000.00', // two decimals required
+    'currency' => Currency::PYG,
+]);
+```
+
+#### Single Buy Get Confirmation
+
+```php
+$response = $bancard->singleBuyGetConfirmation([
     'shop_process_id' => 7777777,
 ]);
 ```
