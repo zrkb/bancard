@@ -2,11 +2,18 @@
 
 namespace Bancard;
 
+use Bancard\Operations\BillingCancel;
+use Bancard\Operations\BillingClientInfo;
+use Bancard\Operations\CardsNew;
+use Bancard\Operations\Charge;
+use Bancard\Operations\DeleteCard;
 use Bancard\Operations\Operation;
+use Bancard\Operations\PreauthorizationConfirm;
 use Bancard\Operations\SingleBuy;
 use Bancard\Operations\SingleBuyConfirm;
 use Bancard\Operations\SingleBuyGetConfirmation;
 use Bancard\Operations\SingleBuyRollback;
+use Bancard\Operations\UsersCards;
 use Zero\Http\Client;
 
 class Bancard extends Client
@@ -147,5 +154,40 @@ class Bancard extends Client
     public function singleBuyRollback(array $payload): Operation
     {
         return SingleBuyRollback::make($payload);
+    }
+
+    public function cardsNew(array $payload): Operation
+    {
+        return CardsNew::make($payload);
+    }
+
+    public function usersCards(array $payload): Operation
+    {
+        return UsersCards::make($payload);
+    }
+
+    public function charge(array $payload): Operation
+    {
+        return Charge::make($payload);
+    }
+
+    public function deleteCard(array $payload): Operation
+    {
+        return DeleteCard::make($payload);
+    }
+
+    public function preauthorizationConfirm(array $payload): Operation
+    {
+        return PreauthorizationConfirm::make($payload);
+    }
+
+    public function billingClientInfo(array $payload): Operation
+    {
+        return BillingClientInfo::make($payload);
+    }
+
+    public function billingCancel(array $payload): Operation
+    {
+        return BillingCancel::make($payload);
     }
 }

@@ -37,7 +37,14 @@ abstract class Operation
      */
     public function execute()
     {
-        return (new Bancard)->request($this->method, $this->endpoint, $this->data());
+        /** @var string $endpoint */
+        $endpoint = preg_replace_callback(
+            '/{(\w+)}/',
+            function ($m) { return $this->payload($m[1]); },
+            $this->endpoint
+        );
+
+        return (new Bancard)->request($this->method, $endpoint, $this->data());
     }
 
     /**
