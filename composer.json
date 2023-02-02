@@ -22,12 +22,18 @@
             "Bancard\\": "src"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Bancard\\Tests\\": "tests"
+        }
+    },
     "config": {
         "sort-packages": true
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require-dev": {
-        "phpstan/phpstan": "^0.12.90"
+        "phpstan/phpstan": "^0.12.90",
+        "phpunit/phpunit": "^9.6"
     }
 }
