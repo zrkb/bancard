@@ -2,6 +2,7 @@
 
 > PHP SDK for the Bancard vPOS 2.0 payment gateway API
 
+<a href="https://github.com/zrkb/bancard/actions"><img src="https://github.com/zrkb/bancard/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 <a href="https://packagist.org/packages/zrkb/bancard"><img src="https://poser.pugx.org/zrkb/bancard/d/total.svg" alt="Total Downloads"></a>
 <a href="https://packagist.org/packages/zrkb/bancard"><img src="https://poser.pugx.org/zrkb/bancard/v/stable.svg" alt="Latest Stable Version"></a>
 <a href="https://packagist.org/packages/zrkb/bancard"><img src="https://poser.pugx.org/zrkb/bancard/license.svg" alt="License"></a>
