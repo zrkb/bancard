@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bancard\Tests\Operations;
 
 use Bancard\Bancard;
+use Bancard\Exception\ApiException;
 use Bancard\Exception\ValidationException;
 use Bancard\Operations\SingleBuy;
 use Bancard\Response\SingleBuyResponse;
@@ -74,16 +75,21 @@ class SingleBuyTest extends TestCase
         $this->assertRequestSent('POST', '/vpos/api/0.3/single_buy');
     }
 
-    public function testExecuteHandlesErrorResponse(): void
+    public function testExecuteThrowsOnErrorResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('single_buy_error'));
 
         $op = new SingleBuy($this->bancard, $this->payload);
-        $response = $op->execute();
 
-        $this->assertFalse($response->isSuccessful());
-        $this->assertSame('Invalid operation.', $response->getMessage());
-        $this->assertSame('InvalidOperationError', $response->getErrorKey());
+        try {
+            $op->execute();
+            $this->fail('Expected ApiException was not thrown.');
+        } catch (ApiException $e) {
+            $this->assertSame('Invalid operation.', $e->getMessage());
+            $this->assertSame('InvalidOperationError', $e->getErrorKey());
+            $this->assertSame('error', $e->getStatus());
+            $this->assertFalse($e->getResponse()->isSuccessful());
+        }
     }
 
     public function testValidationThrowsOnMissingFields(): void

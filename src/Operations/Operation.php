@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bancard\Operations;
 
 use Bancard\Bancard;
+use Bancard\Exception\ApiException;
 use Bancard\Exception\ValidationException;
 use Bancard\Response\Response;
 use InvalidArgumentException;
@@ -46,7 +47,13 @@ abstract class Operation
 
         $raw = $this->client->request($this->method, $endpoint, $this->data());
 
-        return new ($this->responseClass)($raw);
+        $response = new ($this->responseClass)($raw);
+
+        if (!$response->isSuccessful()) {
+            throw new ApiException($response);
+        }
+
+        return $response;
     }
 
     /**

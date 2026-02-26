@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bancard\Tests\Operations;
 
 use Bancard\Bancard;
+use Bancard\Exception\ApiException;
 use Bancard\Exception\ValidationException;
 use Bancard\Operations\Operation;
 use Bancard\Response\Response;
@@ -150,7 +151,7 @@ class OperationTest extends TestCase
 
     public function testExecuteInterpolatesEndpointPlaceholders(): void
     {
-        $this->mockResponse(200, ['ok' => true]);
+        $this->mockResponse(200, ['status' => 'success']);
 
         $op = new TestableOperation($this->bancard, ['id' => '99', 'name' => 'test']);
         $op->execute();
@@ -177,6 +178,26 @@ class OperationTest extends TestCase
         $result = $op->execute();
 
         $this->assertTrue($result->isSuccessful());
+    }
+
+    public function testExecuteThrowsApiExceptionOnFailure(): void
+    {
+        $this->mockResponse(200, [
+            'status' => 'error',
+            'messages' => [['key' => 'SomeError', 'level' => 'error', 'dsc' => 'Something went wrong.']],
+        ]);
+
+        $op = new TestableOperation($this->bancard, ['id' => '1', 'name' => 'test']);
+
+        try {
+            $op->execute();
+            $this->fail('Expected ApiException was not thrown.');
+        } catch (ApiException $e) {
+            $this->assertSame('Something went wrong.', $e->getMessage());
+            $this->assertSame('SomeError', $e->getErrorKey());
+            $this->assertSame('error', $e->getStatus());
+            $this->assertFalse($e->getResponse()->isSuccessful());
+        }
     }
 }
 

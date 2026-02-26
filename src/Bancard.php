@@ -71,7 +71,19 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     *   amount: string,
+     *   currency: string,
+     *   return_url?: string,
+     *   cancel_url?: string,
+     *   description?: string,
+     *   additional_data?: string,
+     *   iva_amount?: string,
+     *   preauthorization?: string,
+     *   extra_response_attributes?: list<string>,
+     *   billing?: array<string, mixed>,
+     * } $payload
      */
     public function singleBuy(array $payload): SingleBuyResponse
     {
@@ -79,7 +91,11 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     *   amount: string,
+     *   currency: string,
+     * } $payload
      */
     public function singleBuyConfirm(array $payload): ConfirmTokenResponse
     {
@@ -87,7 +103,9 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     * } $payload
      */
     public function singleBuyGetConfirmation(array $payload): ConfirmationResponse
     {
@@ -95,7 +113,9 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     * } $payload
      */
     public function singleBuyRollback(array $payload): RollbackResponse
     {
@@ -103,7 +123,13 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   card_id: int|string,
+     *   user_id: int|string,
+     *   return_url?: string,
+     *   cancel_url?: string,
+     *   billing?: array<string, mixed>,
+     * } $payload
      */
     public function cardsNew(array $payload): CardsNewResponse
     {
@@ -111,7 +137,9 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   user_id: int|string,
+     * } $payload
      */
     public function usersCards(array $payload): UsersCardsResponse
     {
@@ -119,7 +147,18 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     *   amount: string,
+     *   currency: string,
+     *   alias_token: string,
+     *   description?: string,
+     *   additional_data?: string,
+     *   iva_amount?: string,
+     *   preauthorization?: string,
+     *   extra_response_attributes?: list<string>,
+     *   billing?: array<string, mixed>,
+     * } $payload
      */
     public function charge(array $payload): ChargeResponse
     {
@@ -127,7 +166,10 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   user_id: int|string,
+     *   alias_token: string,
+     * } $payload
      */
     public function deleteCard(array $payload): DeleteCardResponse
     {
@@ -135,7 +177,9 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     * } $payload
      */
     public function preauthorizationConfirm(array $payload): PreauthorizationConfirmResponse
     {
@@ -143,7 +187,11 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   client_ruc?: string,
+     *   client_name?: string,
+     *   client_email?: string,
+     * } $payload
      */
     public function billingClientInfo(array $payload): BillingClientInfoResponse
     {
@@ -151,7 +199,9 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     * } $payload
      */
     public function billingCancel(array $payload): BillingCancelResponse
     {
@@ -159,7 +209,19 @@ class Bancard
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array{
+     *   shop_process_id: int|string,
+     *   amount: string,
+     *   currency: string,
+     *   return_url?: string,
+     *   cancel_url?: string,
+     *   description?: string,
+     *   additional_data?: string,
+     *   iva_amount?: string,
+     *   preauthorization?: string,
+     *   extra_response_attributes?: list<string>,
+     *   billing?: array<string, mixed>,
+     * } $payload
      */
     public function singleBuyZimple(array $payload): SingleBuyResponse
     {
