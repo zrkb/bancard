@@ -1,0 +1,9 @@
+{
+    "status": "success",
+    "confirmation": {
+        "shop_process_id": "123",
+        "response_code": "12",
+        "response_description": "Transaccion pendiente"
+    },
+    "messages": []
+}

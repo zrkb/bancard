@@ -1,0 +1,10 @@
+{
+    "status": "error",
+    "messages": [
+        {
+            "key": "GenericError",
+            "level": "error",
+            "dsc": "An error occurred."
+        }
+    ]
+}

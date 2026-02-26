@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Util;
 
-class Currency
+enum Currency: string
 {
-    const PYG = 'PYG';
-    const USD = 'USD';
+    case PYG = 'PYG';
+    case USD = 'USD';
 }

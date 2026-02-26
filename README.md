@@ -1,6 +1,6 @@
 # Bancard
 
-> A minimal implementation for Bancard API vPOS 2.0
+> PHP SDK for the Bancard vPOS 2.0 payment gateway API
 
 <a href="https://packagist.org/packages/zrkb/bancard"><img src="https://poser.pugx.org/zrkb/bancard/d/total.svg" alt="Total Downloads"></a>
 <a href="https://packagist.org/packages/zrkb/bancard"><img src="https://poser.pugx.org/zrkb/bancard/v/stable.svg" alt="Latest Stable Version"></a>
@@ -8,11 +8,7 @@
 
 ## Installation
 
-### Requirements
-
-* PHP >= 7.3 | ^8.0
-
-### Installing
+**Requirements:** PHP >= 8.1
 
 ```bash
 composer require zrkb/bancard
@@ -23,14 +19,16 @@ composer require zrkb/bancard
 ```php
 use Bancard\Bancard;
 
-Bancard::setPrivateKey('PRIVATE_KEY');
-Bancard::setPublicKey('PUBLIC_KEY');
-Bancard::setStaging(true); // Use staging environment
-
-$bancard = new Bancard;
+$bancard = new Bancard(
+    publicKey: 'YOUR_PUBLIC_KEY',
+    privateKey: 'YOUR_PRIVATE_KEY',
+    staging: true, // optional, defaults to false
+);
 ```
 
 ## Usage
+
+All operations return typed response objects with convenience methods.
 
 ### Single Buy
 
@@ -38,39 +36,61 @@ $bancard = new Bancard;
 use Bancard\Util\Currency;
 
 $response = $bancard->singleBuy([
-    'shop_process_id' => 7777777,
-    'name' => 'My Product',
-    'description' => 'Product Description',
+    'shop_process_id' => '7777777',
     'amount' => '10000.00',
-    'currency' => Currency::PYG,
-    'return_url' => 'https://app.test/return_url',
-    'cancel_url' => 'https://app.test/cancel_url',
+    'currency' => Currency::PYG->value,
+    'return_url' => 'https://app.test/return',
+    'cancel_url' => 'https://app.test/cancel',
+]);
+
+if ($response->isSuccessful()) {
+    $processId = $response->getProcessId();
+}
+```
+
+### Single Buy (Zimple)
+
+```php
+$response = $bancard->singleBuyZimple([
+    'shop_process_id' => '7777777',
+    'amount' => '10000.00',
+    'currency' => Currency::PYG->value,
+    'return_url' => 'https://app.test/return',
+    'cancel_url' => 'https://app.test/cancel',
 ]);
 ```
 
 ### Single Buy Confirm
 
+Generates the confirm token for the iframe callback (no HTTP request is made).
+
 ```php
 $response = $bancard->singleBuyConfirm([
-    'shop_process_id' => 7777777,
+    'shop_process_id' => '7777777',
     'amount' => '10000.00',
-    'currency' => Currency::PYG,
+    'currency' => Currency::PYG->value,
 ]);
+
+$token = $response->getToken();
 ```
 
 ### Single Buy Get Confirmation
 
 ```php
 $response = $bancard->singleBuyGetConfirmation([
-    'shop_process_id' => 7777777,
+    'shop_process_id' => '7777777',
 ]);
+
+if ($response->isApproved()) {
+    $code = $response->getResponseCode();
+}
 ```
 
 ### Single Buy Rollback
 
 ```php
 $response = $bancard->singleBuyRollback([
-    'shop_process_id' => 7777777,
+    'shop_process_id' => '7777777',
 ]);
 ```
 
@@ -78,36 +98,50 @@ $response = $bancard->singleBuyRollback([
 
 ```php
 $response = $bancard->cardsNew([
-    'card_id' => 123,
-    'user_id' => 456,
-    'return_url' => 'https://app.test/return_url',
+    'card_id' => '123',
+    'user_id' => '456',
+    'return_url' => 'https://app.test/return',
 ]);
+
+$processId = $response->getProcessId();
 ```
 
 ### List User Cards
 
 ```php
 $response = $bancard->usersCards([
-    'user_id' => 456,
+    'user_id' => '456',
 ]);
+
+foreach ($response->getCards() as $card) {
+    echo $card->card_masked_number;
+}
 ```
 
 ### Charge (Token-Based Payment)
 
 ```php
 $response = $bancard->charge([
-    'shop_process_id' => 7777777,
+    'shop_process_id' => '7777777',
     'amount' => '10000.00',
-    'currency' => Currency::PYG,
+    'currency' => Currency::PYG->value,
     'alias_token' => 'card_alias_token',
 ]);
+
+if ($response->isApproved()) {
+    // Payment successful
+}
+
+if ($response->is3dsRedirect()) {
+    // 3DS authentication required
+}
 ```
 
 ### Delete Card
 
 ```php
 $response = $bancard->deleteCard([
-    'user_id' => 456,
+    'user_id' => '456',
     'alias_token' => 'card_alias_token',
 ]);
 ```
@@ -116,8 +150,12 @@ $response = $bancard->deleteCard([
 
 ```php
 $response = $bancard->preauthorizationConfirm([
-    'shop_process_id' => 7777777,
+    'shop_process_id' => '7777777',
 ]);
+
+if ($response->isApproved()) {
+    // Preauthorization confirmed
+}
 ```
 
 ### Billing Client Info
@@ -126,15 +164,54 @@ $response = $bancard->preauthorizationConfirm([
 $response = $bancard->billingClientInfo([
     // billing client info fields
 ]);
+
+$client = $response->getClient();
 ```
 
 ### Billing Cancel
 
 ```php
 $response = $bancard->billingCancel([
-    'shop_process_id' => 7777777,
+    'shop_process_id' => '7777777',
 ]);
 ```
+
+## Response Objects
+
+All responses extend `Bancard\Response\Response` and provide:
+
+- `isSuccessful(): bool` -- checks if `status === 'success'`
+- `getStatus(): ?string`
+- `getMessage(): ?string` -- first message description
+- `getErrorKey(): ?string` -- error key from messages
+- `raw(): \stdClass` -- access the raw response data
+
+Specialized responses add operation-specific methods (e.g., `getProcessId()`, `isApproved()`, `getCards()`).
+
+## Error Handling
+
+```php
+use Bancard\Exception\ValidationException;
+
+try {
+    $response = $bancard->singleBuy($payload);
+} catch (ValidationException $e) {
+    // Missing required fields
+    $errors = $e->getErrors(); // ['shop_process_id', 'amount', 'currency']
+}
+```
+
+## Amount Formatting
+
+```php
+use Bancard\Util\Amount;
+
+$formatted = Amount::format(10000); // "10000.00"
+```
+
+## Upgrading from v1
+
+See [UPGRADE.md](UPGRADE.md) for the migration guide.
 
 ## Security
 

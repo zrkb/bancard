@@ -1,36 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Operations;
 
-use Bancard\Bancard;
+use Bancard\Response\ConfirmTokenResponse;
+use Bancard\Response\Response;
 use Bancard\Util\Token;
 
+/**
+ * @extends Operation<ConfirmTokenResponse>
+ */
 class SingleBuyConfirm extends Operation
 {
-    /**
-     * We are overriding this method because this class is merely used to
-     * get the token for the SingleBuyConfirm Operation.
-     *
-     * @return mixed
-     */
-    public function execute()
-    {
-        return false;
-    }
+    /** @var class-string<ConfirmTokenResponse> */
+    protected string $responseClass = ConfirmTokenResponse::class;
 
     /**
-     * Make a new token.
-     *
-     * @return string
+     * @return ConfirmTokenResponse
      */
+    public function execute(): Response
+    {
+        $this->validate();
+
+        return new ConfirmTokenResponse($this->token());
+    }
+
     public function token(): string
     {
         return Token::make(
-            Bancard::privateKey(),
-            $this->payload('shop_process_id'),
+            $this->client->privateKey,
+            (string) $this->payload('shop_process_id'),
             'confirm',
-            $this->payload('amount'),
-            $this->payload('currency'),
+            (string) $this->payload('amount'),
+            (string) $this->payload('currency'),
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function rules(): array
+    {
+        return ['shop_process_id', 'amount', 'currency'];
     }
 }

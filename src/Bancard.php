@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard;
 
 use Bancard\Operations\BillingCancel;
@@ -7,187 +9,162 @@ use Bancard\Operations\BillingClientInfo;
 use Bancard\Operations\CardsNew;
 use Bancard\Operations\Charge;
 use Bancard\Operations\DeleteCard;
-use Bancard\Operations\Operation;
 use Bancard\Operations\PreauthorizationConfirm;
 use Bancard\Operations\SingleBuy;
 use Bancard\Operations\SingleBuyConfirm;
 use Bancard\Operations\SingleBuyGetConfirmation;
 use Bancard\Operations\SingleBuyRollback;
 use Bancard\Operations\UsersCards;
-use Zero\Http\Client;
+use Bancard\Response\BillingCancelResponse;
+use Bancard\Response\BillingClientInfoResponse;
+use Bancard\Response\CardsNewResponse;
+use Bancard\Response\ChargeResponse;
+use Bancard\Response\ConfirmationResponse;
+use Bancard\Response\ConfirmTokenResponse;
+use Bancard\Response\DeleteCardResponse;
+use Bancard\Response\PreauthorizationConfirmResponse;
+use Bancard\Response\RollbackResponse;
+use Bancard\Response\SingleBuyResponse;
+use Bancard\Response\UsersCardsResponse;
+use GuzzleHttp\Client as GuzzleClient;
 
-class Bancard extends Client
+class Bancard
 {
-    /**
-     * Production base URL
-     *
-     * @var string
-     */
-    protected $productionBaseUrl = 'https://vpos.infonet.com.py/';
+    private const PRODUCTION_BASE_URL = 'https://vpos.infonet.com.py/';
+    private const STAGING_BASE_URL = 'https://vpos.infonet.com.py:8888/';
+
+    private GuzzleClient $http;
 
     /**
-     * Staging base URL
-     *
-     * @var string
+     * @param array<string, mixed> $guzzle
      */
-    protected $stagingBaseUrl = 'https://vpos.infonet.com.py:8888/';
+    public function __construct(
+        public readonly string $publicKey,
+        public readonly string $privateKey,
+        public readonly bool $staging = false,
+        array $guzzle = [],
+    ) {
+        $guzzle['base_uri'] = $this->baseUri();
 
-    /**
-     * Private Key
-     *
-     * @var string
-     */
-    protected static $privateKey;
-
-    /**
-     * Public Key
-     *
-     * @var string
-     */
-    protected static $publicKey;
-
-    /**
-     * Public Key
-     *
-     * @var bool
-     */
-    protected static $staging = false;
-
-    public function __construct(array $config = [])
-    {
-        parent::__construct($this->baseUri(), $config);
+        $this->http = new GuzzleClient($guzzle);
     }
 
-    /**
-     * Sets the Private Key to be used for requests.
-     *
-     * @param string $privateKey
-     * 
-     * @return void
-     */
-    public static function setPrivateKey($privateKey)
-    {
-        self::$privateKey = $privateKey;
-    }
-
-    /**
-     * The Private Key used for requests.
-     *
-     * @return string
-     */
-    public static function privateKey(): string
-    {
-        return self::$privateKey;
-    }
-
-    /**
-     * Sets the Public Key to be used for requests.
-     *
-     * @param string $publicKey
-     * 
-     * @return void
-     */
-    public static function setPublicKey($publicKey)
-    {
-        self::$publicKey = $publicKey;
-    }
-
-    /**
-     * The Public Key used for requests.
-     *
-     * @return string
-     */
-    public static function publicKey(): string
-    {
-        return self::$publicKey;
-    }
-
-    /**
-     * Sets the staging mode.
-     *
-     * @param bool $staging
-     * 
-     * @return void
-     */
-    public static function setStaging($staging)
-    {
-        self::$staging = $staging;
-    }
-
-    /**
-     * The staging mode.
-     *
-     * @return bool
-     */
-    public static function staging(): bool
-    {
-        return self::$staging;
-    }
-
-    /**
-     * Base uri for client.
-     *
-     * @return string
-     */
     public function baseUri(): string
     {
-        return static::staging() ?
-                $this->stagingBaseUrl :
-                $this->productionBaseUrl;
+        return $this->staging ? self::STAGING_BASE_URL : self::PRODUCTION_BASE_URL;
     }
 
-    public function singleBuy(array $payload): Operation
+    public function setHttp(GuzzleClient $http): void
     {
-        return SingleBuy::make($payload);
+        $this->http = $http;
     }
 
-    public function singleBuyConfirm(array $payload): Operation
+    /**
+     * @param array<string, mixed> $params
+     */
+    public function request(string $method, string $url, array $params): \stdClass
     {
-        return SingleBuyConfirm::make($payload);
+        $response = $this->http->request($method, $url, ['json' => $params]);
+
+        /** @var \stdClass */
+        return json_decode((string) $response->getBody());
     }
 
-    public function singleBuyGetConfirmation(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function singleBuy(array $payload): SingleBuyResponse
     {
-        return SingleBuyGetConfirmation::make($payload);
+        return (new SingleBuy($this, $payload))->execute();
     }
 
-    public function singleBuyRollback(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function singleBuyConfirm(array $payload): ConfirmTokenResponse
     {
-        return SingleBuyRollback::make($payload);
+        return (new SingleBuyConfirm($this, $payload))->execute();
     }
 
-    public function cardsNew(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function singleBuyGetConfirmation(array $payload): ConfirmationResponse
     {
-        return CardsNew::make($payload);
+        return (new SingleBuyGetConfirmation($this, $payload))->execute();
     }
 
-    public function usersCards(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function singleBuyRollback(array $payload): RollbackResponse
     {
-        return UsersCards::make($payload);
+        return (new SingleBuyRollback($this, $payload))->execute();
     }
 
-    public function charge(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function cardsNew(array $payload): CardsNewResponse
     {
-        return Charge::make($payload);
+        return (new CardsNew($this, $payload))->execute();
     }
 
-    public function deleteCard(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function usersCards(array $payload): UsersCardsResponse
     {
-        return DeleteCard::make($payload);
+        return (new UsersCards($this, $payload))->execute();
     }
 
-    public function preauthorizationConfirm(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function charge(array $payload): ChargeResponse
     {
-        return PreauthorizationConfirm::make($payload);
+        return (new Charge($this, $payload))->execute();
     }
 
-    public function billingClientInfo(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function deleteCard(array $payload): DeleteCardResponse
     {
-        return BillingClientInfo::make($payload);
+        return (new DeleteCard($this, $payload))->execute();
     }
 
-    public function billingCancel(array $payload): Operation
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function preauthorizationConfirm(array $payload): PreauthorizationConfirmResponse
     {
-        return BillingCancel::make($payload);
+        return (new PreauthorizationConfirm($this, $payload))->execute();
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function billingClientInfo(array $payload): BillingClientInfoResponse
+    {
+        return (new BillingClientInfo($this, $payload))->execute();
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function billingCancel(array $payload): BillingCancelResponse
+    {
+        return (new BillingCancel($this, $payload))->execute();
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function singleBuyZimple(array $payload): SingleBuyResponse
+    {
+        $payload['zimple'] = 'S';
+
+        return (new SingleBuy($this, $payload))->execute();
     }
 }

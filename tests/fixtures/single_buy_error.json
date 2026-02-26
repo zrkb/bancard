@@ -1,0 +1,10 @@
+{
+    "status": "error",
+    "messages": [
+        {
+            "key": "InvalidOperationError",
+            "level": "error",
+            "dsc": "Invalid operation."
+        }
+    ]
+}

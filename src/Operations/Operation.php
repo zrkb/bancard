@@ -1,87 +1,101 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Operations;
 
 use Bancard\Bancard;
+use Bancard\Exception\ValidationException;
+use Bancard\Response\Response;
 use InvalidArgumentException;
 
+/**
+ * @template TResponse of Response
+ */
 abstract class Operation
 {
     protected string $endpoint;
 
     protected string $method = 'POST';
 
-    protected array $payload;
+    /** @var class-string<TResponse> */
+    protected string $responseClass = Response::class;
 
-    final public function __construct(array $payload)
-    {
-        $this->payload = $payload;
+    /**
+     * @param array<string, mixed> $payload
+     */
+    final public function __construct(
+        protected readonly Bancard $client,
+        protected readonly array $payload,
+    ) {
     }
 
     /**
-     * Make a new operation.
-     *
-     * @param array $payload
-     * 
-     * @return self
+     * @return TResponse
      */
-    public static function make($payload): self
+    public function execute(): Response
     {
-        return (new static($payload))->execute();
-    }
+        $this->validate();
 
-    /**
-     * Send request using an Http\ClientInterface object.
-     *
-     * @return mixed
-     */
-    public function execute()
-    {
         /** @var string $endpoint */
         $endpoint = preg_replace_callback(
             '/{(\w+)}/',
-            function ($m) { return $this->payload($m[1]); },
+            fn (array $m): string => (string) $this->payload($m[1]),
             $this->endpoint
         );
 
-        return (new Bancard)->request($this->method, $endpoint, $this->data());
+        $raw = $this->client->request($this->method, $endpoint, $this->data());
+
+        return new ($this->responseClass)($raw);
     }
 
     /**
-     * The data that should sent to make an operation.
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function data()
+    public function data(): array
     {
-        $operationData = array_filter($this->payload + ['token' => $this->token()]);
+        $operationData = array_filter(
+            $this->payload + ['token' => $this->token()],
+            fn (mixed $v): bool => $v !== null
+        );
 
         return [
-            'public_key' => Bancard::publicKey(),
+            'public_key' => $this->client->publicKey,
             'operation' => $operationData,
         ];
     }
 
-    /**
-     * Return the value from the payload with the specified key.
-     *
-     * @param string $key
-     * 
-     * @return mixed|null
-     */
-    public function payload(string $key)
+    public function payload(string $key): mixed
     {
-        if (isset($this->payload[$key]) == false) {
+        if (!isset($this->payload[$key])) {
             throw new InvalidArgumentException("Invalid key \"{$key}\" in payload.");
         }
 
         return $this->payload[$key];
     }
 
-    /**
-     * Make a new token.
-     *
-     * @return string
-     */
     abstract public function token(): string;
+
+    /**
+     * @return list<string>
+     */
+    protected function rules(): array
+    {
+        return [];
+    }
+
+    protected function validate(): void
+    {
+        $missing = [];
+
+        foreach ($this->rules() as $field) {
+            if (!array_key_exists($field, $this->payload)) {
+                $missing[] = $field;
+            }
+        }
+
+        if ($missing !== []) {
+            throw new ValidationException($missing);
+        }
+    }
 }

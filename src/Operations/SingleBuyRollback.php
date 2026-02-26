@@ -1,26 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Operations;
 
-use Bancard\Bancard;
+use Bancard\Response\RollbackResponse;
 use Bancard\Util\Token;
 
+/**
+ * @extends Operation<RollbackResponse>
+ */
 class SingleBuyRollback extends Operation
 {
     protected string $endpoint = '/vpos/api/0.3/single_buy/rollback';
 
-    /**
-     * Make a new token.
-     *
-     * @return string
-     */
+    /** @var class-string<RollbackResponse> */
+    protected string $responseClass = RollbackResponse::class;
+
     public function token(): string
     {
         return Token::make(
-            Bancard::privateKey(),
-            $this->payload('shop_process_id'),
+            $this->client->privateKey,
+            (string) $this->payload('shop_process_id'),
             'rollback',
-            '0.00'
+            '0.00',
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function rules(): array
+    {
+        return ['shop_process_id'];
     }
 }

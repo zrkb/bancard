@@ -1,19 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Util;
 
 class Token
 {
-    /**
-     * Creates a single-use token that can be used with any API method.
-     *
-     * @return string
-     */
-    public static function make(): string
+    public static function make(string ...$parts): string
     {
-        return hash(
-            'md5',
-            implode('', func_get_args())
-        );
+        return hash('md5', implode('', $parts));
     }
 }

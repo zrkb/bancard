@@ -1,0 +1,9 @@
+{
+    "status": "success",
+    "confirmation": {
+        "shop_process_id": "123",
+        "response_code": "00",
+        "response_description": "Preautorizacion confirmada"
+    },
+    "messages": []
+}

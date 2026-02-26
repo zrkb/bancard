@@ -1,0 +1,18 @@
+{
+    "status": "success",
+    "cards": [
+        {
+            "alias_token": "token_abc",
+            "card_masked_number": "****1234",
+            "card_brand": "Visa",
+            "expiration_date": "12/28"
+        },
+        {
+            "alias_token": "token_def",
+            "card_masked_number": "****5678",
+            "card_brand": "Mastercard",
+            "expiration_date": "06/27"
+        }
+    ],
+    "messages": []
+}

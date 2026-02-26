@@ -1,0 +1,8 @@
+{
+    "status": "success",
+    "client": {
+        "name": "John Doe",
+        "document_number": "1234567"
+    },
+    "messages": []
+}

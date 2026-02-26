@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Tests\Util;
 
 use Bancard\Tests\TestCase;

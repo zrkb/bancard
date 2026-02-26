@@ -1,28 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Operations;
 
-use Bancard\Bancard;
+use Bancard\Response\ChargeResponse;
 use Bancard\Util\Token;
 
+/**
+ * @extends Operation<ChargeResponse>
+ */
 class Charge extends Operation
 {
     protected string $endpoint = '/vpos/api/0.3/charge';
 
-    /**
-     * Make a new token.
-     *
-     * @return string
-     */
+    /** @var class-string<ChargeResponse> */
+    protected string $responseClass = ChargeResponse::class;
+
     public function token(): string
     {
         return Token::make(
-            Bancard::privateKey(),
-            $this->payload('shop_process_id'),
+            $this->client->privateKey,
+            (string) $this->payload('shop_process_id'),
             'charge',
-            $this->payload('amount'),
-            $this->payload('currency'),
-            $this->payload('alias_token'),
+            (string) $this->payload('amount'),
+            (string) $this->payload('currency'),
+            (string) $this->payload('alias_token'),
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function rules(): array
+    {
+        return ['shop_process_id', 'amount', 'currency', 'alias_token'];
     }
 }

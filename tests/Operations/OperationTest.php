@@ -1,35 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bancard\Tests\Operations;
 
 use Bancard\Bancard;
+use Bancard\Exception\ValidationException;
 use Bancard\Operations\Operation;
+use Bancard\Response\Response;
 use Bancard\Tests\TestCase;
 use Bancard\Util\Token;
-use GuzzleHttp\Client as GuzzleClient;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Middleware;
-use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 
 class OperationTest extends TestCase
 {
+    private Bancard $bancard;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->bancard = $this->makeBancard();
+    }
+
     public function testPayloadReturnsValue(): void
     {
-        $op = new class(['key' => 'value']) extends Operation {
-            protected string $endpoint = '/test';
-            public function token(): string { return 'test_token'; }
-        };
-        $this->assertSame('value', $op->payload('key'));
+        $op = new TestableOperation($this->bancard, ['id' => 'value', 'name' => 'test']);
+        $this->assertSame('value', $op->payload('id'));
     }
 
     public function testPayloadThrowsOnMissingKey(): void
     {
-        $op = new class([]) extends Operation {
-            protected string $endpoint = '/test';
-            public function token(): string { return 'test_token'; }
-        };
+        $op = new TestableOperation($this->bancard, ['id' => '1', 'name' => 'test']);
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid key "missing" in payload.');
         $op->payload('missing');
@@ -37,46 +38,58 @@ class OperationTest extends TestCase
 
     public function testDataReturnsCorrectStructure(): void
     {
-        $op = new class(['shop_process_id' => '123']) extends Operation {
-            protected string $endpoint = '/test';
-            public function token(): string { return 'generated_token'; }
-        };
+        $op = new TestableOperation($this->bancard, ['id' => '123', 'name' => 'test']);
 
         $data = $op->data();
 
         $this->assertSame('test_public_key', $data['public_key']);
         $this->assertArrayHasKey('operation', $data);
-        $this->assertSame('generated_token', $data['operation']['token']);
-        $this->assertSame('123', $data['operation']['shop_process_id']);
+        $this->assertArrayHasKey('token', $data['operation']);
+        $this->assertSame('123', $data['operation']['id']);
+        $this->assertSame('test', $data['operation']['name']);
     }
 
-    public function testDataFiltersFalsyValues(): void
+    public function testDataOnlyFiltersNull(): void
     {
-        $op = new class([
+        $op = new class($this->bancard, [
             'keep' => 'value',
+            'keep_false' => false,
+            'keep_empty' => '',
+            'keep_zero' => 0,
             'remove_null' => null,
-            'remove_false' => false,
-            'remove_empty' => '',
-            'remove_zero' => 0,
         ]) extends Operation {
             protected string $endpoint = '/test';
-            public function token(): string { return 'token'; }
+
+            /** @var class-string<Response> */
+            protected string $responseClass = Response::class;
+
+            public function token(): string
+            {
+                return 'token';
+            }
         };
 
         $data = $op->data();
 
         $this->assertSame('value', $data['operation']['keep']);
+        $this->assertFalse($data['operation']['keep_false']);
+        $this->assertSame('', $data['operation']['keep_empty']);
+        $this->assertSame(0, $data['operation']['keep_zero']);
         $this->assertArrayNotHasKey('remove_null', $data['operation']);
-        $this->assertArrayNotHasKey('remove_false', $data['operation']);
-        $this->assertArrayNotHasKey('remove_empty', $data['operation']);
-        $this->assertArrayNotHasKey('remove_zero', $data['operation']);
     }
 
     public function testDataKeepsStringZeroPointZero(): void
     {
-        $op = new class(['amount' => '0.00']) extends Operation {
+        $op = new class($this->bancard, ['amount' => '0.00']) extends Operation {
             protected string $endpoint = '/test';
-            public function token(): string { return 'token'; }
+
+            /** @var class-string<Response> */
+            protected string $responseClass = Response::class;
+
+            public function token(): string
+            {
+                return 'token';
+            }
         };
 
         $data = $op->data();
@@ -85,9 +98,16 @@ class OperationTest extends TestCase
 
     public function testPayloadTokenOverridesGeneratedToken(): void
     {
-        $op = new class(['token' => 'custom_token']) extends Operation {
+        $op = new class($this->bancard, ['token' => 'custom_token']) extends Operation {
             protected string $endpoint = '/test';
-            public function token(): string { return 'generated_token'; }
+
+            /** @var class-string<Response> */
+            protected string $responseClass = Response::class;
+
+            public function token(): string
+            {
+                return 'generated_token';
+            }
         };
 
         $data = $op->data();
@@ -96,22 +116,14 @@ class OperationTest extends TestCase
 
     public function testDefaultMethodIsPost(): void
     {
-        $op = new class([]) extends Operation {
-            protected string $endpoint = '/test';
-            public function token(): string { return 'token'; }
-        };
-
+        $op = new TestableOperation($this->bancard, ['id' => '1', 'name' => 'test']);
         $this->assertSame('POST', $this->getProtectedProperty($op, 'method'));
     }
 
-    public function testDataUsesPublicKeyFromBancard(): void
+    public function testDataUsesPublicKeyFromClient(): void
     {
-        Bancard::setPublicKey('custom_public_key');
-
-        $op = new class([]) extends Operation {
-            protected string $endpoint = '/test';
-            public function token(): string { return 'token'; }
-        };
+        $bancard = $this->makeBancard(publicKey: 'custom_public_key');
+        $op = new TestableOperation($bancard, ['id' => '1', 'name' => 'test']);
 
         $data = $op->data();
         $this->assertSame('custom_public_key', $data['public_key']);
@@ -119,35 +131,17 @@ class OperationTest extends TestCase
 
     public function testExecuteSendsCorrectRequest(): void
     {
-        $mock = new MockHandler([
-            new Response(200, [], (string) json_encode(['status' => 'success'])),
-        ]);
-        /** @var array<int, array<string, mixed>> $history */
-        $history = [];
-        $stack = HandlerStack::create($mock);
-        $stack->push(Middleware::history($history));
+        $this->mockResponse(200, ['status' => 'success']);
 
-        $guzzle = new GuzzleClient([
-            'handler' => $stack,
-            'base_uri' => 'https://vpos.infonet.com.py/',
-        ]);
+        $op = new TestableOperation($this->bancard, ['id' => '42', 'name' => 'test']);
+        $result = $op->execute();
 
-        $bancard = new Bancard();
-        $bancard->setHttp($guzzle);
+        $this->assertTrue($result->isSuccessful());
+        $this->assertCount(1, $this->requestHistory);
 
-        $op = new TestableOperation(['id' => '42', 'name' => 'test']);
-        $result = $op->executeWith($bancard);
+        $this->assertRequestSent('POST', '/test/42/resource');
 
-        $this->assertEquals('success', $result->status);
-        $this->assertCount(1, $history);
-
-        /** @var \GuzzleHttp\Psr7\Request $request */
-        $request = $history[0]['request'];
-        $this->assertSame('POST', $request->getMethod());
-        $this->assertSame('/test/42/resource', $request->getUri()->getPath());
-
-        /** @var array<string, mixed> $body */
-        $body = json_decode((string) $request->getBody(), true);
+        $body = $this->getRequestBody();
         $this->assertSame('test_public_key', $body['public_key']);
         $this->assertArrayHasKey('token', $body['operation']);
         $this->assertSame('42', $body['operation']['id']);
@@ -156,56 +150,72 @@ class OperationTest extends TestCase
 
     public function testExecuteInterpolatesEndpointPlaceholders(): void
     {
-        $mock = new MockHandler([
-            new Response(200, [], (string) json_encode(['ok' => true])),
-        ]);
-        /** @var array<int, array<string, mixed>> $history */
-        $history = [];
-        $stack = HandlerStack::create($mock);
-        $stack->push(Middleware::history($history));
+        $this->mockResponse(200, ['ok' => true]);
 
-        $guzzle = new GuzzleClient([
-            'handler' => $stack,
-            'base_uri' => 'https://vpos.infonet.com.py/',
-        ]);
+        $op = new TestableOperation($this->bancard, ['id' => '99', 'name' => 'test']);
+        $op->execute();
 
-        $bancard = new Bancard();
-        $bancard->setHttp($guzzle);
+        $this->assertRequestSent('POST', '/test/99/resource');
+    }
 
-        $op = new TestableOperation(['id' => '99', 'name' => 'test']);
-        $op->executeWith($bancard);
+    public function testValidationThrowsOnMissingRequiredFields(): void
+    {
+        $op = new ValidatedOperation($this->bancard, ['unrelated' => 'value']);
 
-        /** @var \GuzzleHttp\Psr7\Request $request */
-        $request = $history[0]['request'];
-        $this->assertSame('/test/99/resource', $request->getUri()->getPath());
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Missing required fields: required_field');
+
+        $this->mockResponse(200, ['status' => 'success']);
+        $op->execute();
+    }
+
+    public function testValidationPassesWithRequiredFields(): void
+    {
+        $this->mockResponse(200, ['status' => 'success']);
+
+        $op = new ValidatedOperation($this->bancard, ['required_field' => 'value']);
+        $result = $op->execute();
+
+        $this->assertTrue($result->isSuccessful());
     }
 }
 
 /**
- * Concrete Operation subclass for integration testing.
- * Provides executeWith() to inject a Bancard client instance.
+ * @extends Operation<Response>
  */
 class TestableOperation extends Operation
 {
     protected string $endpoint = '/test/{id}/resource';
 
+    /** @var class-string<Response> */
+    protected string $responseClass = Response::class;
+
     public function token(): string
     {
-        return Token::make(Bancard::privateKey(), $this->payload('id'));
+        return Token::make('test_private_key', (string) $this->payload('id'));
+    }
+}
+
+/**
+ * @extends Operation<Response>
+ */
+class ValidatedOperation extends Operation
+{
+    protected string $endpoint = '/test';
+
+    /** @var class-string<Response> */
+    protected string $responseClass = Response::class;
+
+    public function token(): string
+    {
+        return 'token';
     }
 
     /**
-     * @return mixed
+     * @return list<string>
      */
-    public function executeWith(Bancard $client)
+    protected function rules(): array
     {
-        /** @var string $endpoint */
-        $endpoint = preg_replace_callback(
-            '/{(\w+)}/',
-            function (array $m): string { return (string) $this->payload($m[1]); },
-            $this->endpoint
-        );
-
-        return $client->request($this->method, $endpoint, $this->data());
+        return ['required_field'];
     }
 }
