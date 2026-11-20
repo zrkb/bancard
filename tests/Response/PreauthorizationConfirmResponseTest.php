@@ -57,4 +57,19 @@ class PreauthorizationConfirmResponseTest extends TestCase
         $response = new PreauthorizationConfirmResponse((object) ['status' => 'success']);
         $this->assertNull($response->getConfirmation());
     }
+
+    /**
+     * Confirmation details are read from the confirmation.
+     */
+    public function testConfirmationDetails(): void
+    {
+        $response = new PreauthorizationConfirmResponse((object) [
+            'status' => 'success',
+            'confirmation' => (object) ['response_code' => '00', 'authorization_number' => 999888, 'ticket_number' => '123456'],
+        ]);
+
+        $this->assertSame('00', $response->getResponseCode());
+        $this->assertSame('999888', $response->getAuthorizationNumber());
+        $this->assertSame('123456', $response->getTicketNumber());
+    }
 }

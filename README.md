@@ -80,27 +80,52 @@ $response = $bancard->singleBuyConfirm([
 $token = $response->getToken();
 ```
 
-### Verify Confirmation Callback
+### Payment Form (bancard-checkout.js)
 
-Bancard POSTs the payment result to your confirmation URL. Verify its token before trusting it (constant-time comparison; returns `false` for tampered or malformed input):
+`singleBuy()`, `singleBuyZimple()` and `cardsNew()` return a `process_id`. Bancard's iframe collects the card data with it:
 
 ```php
-$body = json_decode((string) file_get_contents('php://input'), true);
-$operation = is_array($body['operation'] ?? null) ? $body['operation'] : [];
+<div id="iframe-container"></div>
+<script src="<?= $bancard->checkoutScriptUrl() ?>"></script>
+<script>
+    Bancard.Checkout.createForm('iframe-container', <?= json_encode($processId) ?>, {});
+</script>
+```
 
-if (!$bancard->verifyConfirmation($operation)) {
-    http_response_code(400);
+Use `Bancard.Zimple.createForm` for Zimple and `Bancard.Cards.createForm` for card registration. The URL follows the `staging` flag (`bancard-checkout-4.0.0.js`, `Bancard::CHECKOUT_JS_VERSION`).
+
+### Confirmation Callback
+
+Bancard POSTs the payment result to your confirmation URL. `parseConfirmation()` verifies its token (constant-time comparison) and returns a typed object:
+
+```php
+use Bancard\Callback\ConfirmationCallback;
+use Bancard\Exception\InvalidConfirmationException;
+
+try {
+    $confirmation = $bancard->parseConfirmation((string) file_get_contents('php://input'));
+} catch (InvalidConfirmationException $e) {
+    http_response_code(400); // tampered, unsigned or malformed
     exit;
 }
 
-// Trusted: $operation['response_code'], $operation['shop_process_id'], ...
+if ($confirmation->isApproved()) {
+    $confirmation->getShopProcessId();
+    $confirmation->getAuthorizationNumber();
+    $confirmation->getRiskIndex(); // 1-3 low, 4-6 medium, 7-9 high, 0 not available
+} else {
+    $confirmation->getResponseDescription(); // e.g. "Fondos insuficientes"
+}
 
-http_response_code(200);
 header('Content-Type: application/json');
-echo json_encode(['status' => 'success']);
+echo json_encode(ConfirmationCallback::ACKNOWLEDGEMENT); // {"status":"success"}
 ```
 
+In Laravel: `$bancard->parseConfirmation($request->getContent())` and `return response()->json(ConfirmationCallback::ACKNOWLEDGEMENT);`.
+
 Bancard expects HTTP 200 within 30 seconds. If it does not get one, the payment is not necessarily denied: check it with `singleBuyGetConfirmation()`.
+
+To check an already decoded `operation` array, use `$bancard->verifyConfirmation($operation)` (returns `bool`).
 
 ### Single Buy Get Confirmation
 
@@ -110,9 +135,11 @@ $response = $bancard->singleBuyGetConfirmation([
 ]);
 
 if ($response->isApproved()) {
-    $code = $response->getResponseCode();
+    $ticket = $response->getTicketNumber();
 }
 ```
+
+`singleBuyGetConfirmation()` and `preauthorizationConfirm()` responses have the same getters as the confirmation callback (`getResponseCode()`, `getAuthorizationNumber()`, `getTicketNumber()`, `getCardSource()`, `getRiskIndex()`, ...).
 
 ### Single Buy Rollback
 

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Bancard;
 
+use Bancard\Callback\ConfirmationCallback;
 use Bancard\Exception\ApiException;
 use Bancard\Exception\BancardException;
 use Bancard\Exception\CardNotFoundException;
+use Bancard\Exception\InvalidConfirmationException;
 use Bancard\Exception\NetworkException;
 use Bancard\Exception\ValidationException;
 use Bancard\Operations\BillingCancel;
@@ -47,6 +49,9 @@ class Bancard
     /** Default connection timeout in seconds (overridable via the $guzzle option "connect_timeout"). */
     public const DEFAULT_CONNECT_TIMEOUT = 10.0;
 
+    /** bancard-checkout.js version returned by checkoutScriptUrl() (vPOS spec 1.22). */
+    public const CHECKOUT_JS_VERSION = '4.0.0';
+
     private ClientInterface $http;
 
     /**
@@ -81,6 +86,20 @@ class Bancard
     public function baseUri(): string
     {
         return $this->staging ? self::STAGING_BASE_URL : self::PRODUCTION_BASE_URL;
+    }
+
+    /**
+     * Get the URL of bancard-checkout.js for the configured environment.
+     *
+     * Load it with a script tag, then mount the iframe with the process_id:
+     * Bancard.Checkout.createForm() (single buy), Bancard.Zimple.createForm(),
+     * Bancard.Cards.createForm() (cards_new) or Bancard.Charge3DS.createForm().
+     *
+     * @return string Script URL
+     */
+    public function checkoutScriptUrl(): string
+    {
+        return $this->baseUri() . 'checkout/javascript/dist/bancard-checkout-' . self::CHECKOUT_JS_VERSION . '.js';
     }
 
     /**
@@ -230,6 +249,38 @@ class Bancard
         }
 
         return hash_equals($expected, $token);
+    }
+
+    /**
+     * Parse and verify the payment confirmation Bancard POSTs to the confirmation URL.
+     *
+     * On success, answer HTTP 200 with ConfirmationCallback::ACKNOWLEDGEMENT
+     * as JSON within 30 seconds.
+     *
+     * @param string $body Raw request body, e.g. file_get_contents('php://input')
+     * @return ConfirmationCallback Verified confirmation
+     *
+     * @throws InvalidConfirmationException When the body is not {"operation": {...}} or the token does not match
+     */
+    public function parseConfirmation(string $body): ConfirmationCallback
+    {
+        try {
+            $data = json_decode($body, false, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new InvalidConfirmationException('Invalid confirmation body: not valid JSON.', 0, $e);
+        }
+
+        $operation = $data instanceof \stdClass ? ($data->operation ?? null) : null;
+
+        if (!$operation instanceof \stdClass) {
+            throw new InvalidConfirmationException('Invalid confirmation body: expected a JSON object with an "operation" object.');
+        }
+
+        if (!$this->verifyConfirmation(get_object_vars($operation))) {
+            throw new InvalidConfirmationException('Invalid confirmation token.');
+        }
+
+        return new ConfirmationCallback($operation);
     }
 
     /**

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.6
+
+### New
+
+- **`Bancard::parseConfirmation()`**: parses and verifies the confirmation callback body, returning `Callback\ConfirmationCallback` with typed getters (response code and descriptions, authorization/ticket numbers, amount, security information, risk index, invoice number). Throws `InvalidConfirmationException` for malformed or wrongly signed bodies. `ConfirmationCallback::ACKNOWLEDGEMENT` is the `{"status":"success"}` answer Bancard expects.
+- **`Bancard::checkoutScriptUrl()`**: URL of `bancard-checkout-4.0.0.js` for the configured environment (`Bancard::CHECKOUT_JS_VERSION`).
+- **Confirmation getters on `ConfirmationResponse` and `PreauthorizationConfirmResponse`**: `getShopProcessId()`, `getAmount()`, `getCurrency()`, `getAuthorizationNumber()`, `getTicketNumber()`, `getResponseDescription()`, `getCardSource()`, `getRiskIndex()` and more (shared `ConfirmationDetails` trait). `PreauthorizationConfirmResponse` gains `getResponseCode()`.
+
+### Internal
+
+- `Response::stringValue()`/`objectValue()` moved to the `JsonValues` trait.
+
 ## 1.5
 
 ### Behavior Changes

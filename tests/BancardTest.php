@@ -295,6 +295,21 @@ class BancardTest extends TestCase
     }
 
     /**
+     * The checkout script URL follows the environment.
+     */
+    public function testCheckoutScriptUrl(): void
+    {
+        $this->assertSame(
+            'https://vpos.infonet.com.py/checkout/javascript/dist/bancard-checkout-4.0.0.js',
+            (new Bancard(publicKey: 'pk', privateKey: 'sk'))->checkoutScriptUrl()
+        );
+        $this->assertSame(
+            'https://vpos.infonet.com.py:8888/checkout/javascript/dist/bancard-checkout-4.0.0.js',
+            (new Bancard(publicKey: 'pk', privateKey: 'sk', staging: true))->checkoutScriptUrl()
+        );
+    }
+
+    /**
      * Single buy convenience method.
      */
     public function testSingleBuyConvenienceMethod(): void

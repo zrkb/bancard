@@ -6,6 +6,8 @@ namespace Bancard\Response;
 
 class ConfirmationResponse extends Response
 {
+    use ConfirmationDetails;
+
     /**
      * Get the confirmation data.
      *
@@ -17,22 +19,12 @@ class ConfirmationResponse extends Response
     }
 
     /**
-     * Check whether the payment was approved (response code "00").
+     * Get the confirmation object the ConfirmationDetails getters read from.
      *
-     * @return bool
+     * @return \stdClass|null
      */
-    public function isApproved(): bool
+    protected function confirmationData(): ?\stdClass
     {
-        return $this->getResponseCode() === '00';
-    }
-
-    /**
-     * Get the confirmation response code.
-     *
-     * @return string|null
-     */
-    public function getResponseCode(): ?string
-    {
-        return self::stringValue($this->getConfirmation()->response_code ?? null);
+        return $this->getConfirmation();
     }
 }

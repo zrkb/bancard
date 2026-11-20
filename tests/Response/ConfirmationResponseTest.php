@@ -92,4 +92,45 @@ class ConfirmationResponseTest extends TestCase
         $response = new ConfirmationResponse((object) ['status' => 'success']);
         $this->assertNull($response->getResponseCode());
     }
+
+    /**
+     * Confirmation details are read from the spec's get_confirmation example.
+     */
+    public function testConfirmationDetails(): void
+    {
+        $response = new ConfirmationResponse((object) [
+            'status' => 'success',
+            'confirmation' => (object) [
+                'shop_process_id' => '12313',
+                'response_code' => '00',
+                'response_description' => 'Transacción aprobada.',
+                'authorization_number' => '123456',
+                'ticket_number' => '123456789123456',
+                'amount' => '10100.00',
+                'currency' => 'PYG',
+                'security_information' => (object) ['card_source' => 'L', 'risk_index' => '4'],
+            ],
+        ]);
+
+        $this->assertSame('12313', $response->getShopProcessId());
+        $this->assertSame('Transacción aprobada.', $response->getResponseDescription());
+        $this->assertSame('123456', $response->getAuthorizationNumber());
+        $this->assertSame('123456789123456', $response->getTicketNumber());
+        $this->assertSame('10100.00', $response->getAmount());
+        $this->assertSame('PYG', $response->getCurrency());
+        $this->assertSame('L', $response->getCardSource());
+        $this->assertSame(4, $response->getRiskIndex());
+    }
+
+    /**
+     * Confirmation details are null without a confirmation.
+     */
+    public function testConfirmationDetailsAreNullWithoutConfirmation(): void
+    {
+        $response = new ConfirmationResponse((object) ['status' => 'success']);
+
+        $this->assertNull($response->getTicketNumber());
+        $this->assertNull($response->getSecurityInformation());
+        $this->assertNull($response->getRiskIndex());
+    }
 }
