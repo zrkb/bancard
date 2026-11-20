@@ -16,6 +16,9 @@ class SingleBuyRollbackTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +28,9 @@ class SingleBuyRollbackTest extends TestCase
         ];
     }
 
+    /**
+     * SingleBuyRollback token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new SingleBuyRollback($this->bancard, $this->payload);
@@ -32,6 +38,9 @@ class SingleBuyRollbackTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * Token always includes hardcoded zero.
+     */
     public function testTokenAlwaysIncludesHardcodedZero(): void
     {
         $op1 = new SingleBuyRollback($this->bancard, ['shop_process_id' => '456']);
@@ -41,6 +50,9 @@ class SingleBuyRollbackTest extends TestCase
         $this->assertSame(md5('test_private_key' . '456' . 'rollback' . '0.00'), $op1->token());
     }
 
+    /**
+     * SingleBuyRollback request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new SingleBuyRollback($this->bancard, $this->payload);
@@ -51,6 +63,9 @@ class SingleBuyRollbackTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * SingleBuyRollback uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new SingleBuyRollback($this->bancard, $this->payload);
@@ -60,6 +75,9 @@ class SingleBuyRollbackTest extends TestCase
         );
     }
 
+    /**
+     * Execute returns rollback response.
+     */
     public function testExecuteReturnsRollbackResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('rollback_success'));

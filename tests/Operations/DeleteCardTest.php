@@ -16,6 +16,9 @@ class DeleteCardTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,6 +29,9 @@ class DeleteCardTest extends TestCase
         ];
     }
 
+    /**
+     * DeleteCard token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new DeleteCard($this->bancard, $this->payload);
@@ -33,6 +39,9 @@ class DeleteCardTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * DeleteCard request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new DeleteCard($this->bancard, $this->payload);
@@ -44,6 +53,9 @@ class DeleteCardTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * DeleteCard uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new DeleteCard($this->bancard, $this->payload);
@@ -53,12 +65,18 @@ class DeleteCardTest extends TestCase
         );
     }
 
+    /**
+     * DeleteCard uses the DELETE method.
+     */
     public function testMethodIsDelete(): void
     {
         $op = new DeleteCard($this->bancard, $this->payload);
         $this->assertSame('DELETE', $this->getProtectedProperty($op, 'method'));
     }
 
+    /**
+     * Execute returns delete card response.
+     */
     public function testExecuteReturnsDeleteCardResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('delete_card_success'));

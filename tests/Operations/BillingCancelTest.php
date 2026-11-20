@@ -16,6 +16,9 @@ class BillingCancelTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +28,9 @@ class BillingCancelTest extends TestCase
         ];
     }
 
+    /**
+     * BillingCancel token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new BillingCancel($this->bancard, $this->payload);
@@ -32,6 +38,9 @@ class BillingCancelTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * BillingCancel request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new BillingCancel($this->bancard, $this->payload);
@@ -42,6 +51,9 @@ class BillingCancelTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * BillingCancel uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new BillingCancel($this->bancard, $this->payload);
@@ -51,6 +63,9 @@ class BillingCancelTest extends TestCase
         );
     }
 
+    /**
+     * Execute returns billing cancel response.
+     */
     public function testExecuteReturnsBillingCancelResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('billing_cancel_success'));

@@ -16,6 +16,9 @@ class PreauthorizationConfirmTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +28,9 @@ class PreauthorizationConfirmTest extends TestCase
         ];
     }
 
+    /**
+     * PreauthorizationConfirm token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new PreauthorizationConfirm($this->bancard, $this->payload);
@@ -32,6 +38,9 @@ class PreauthorizationConfirmTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * PreauthorizationConfirm request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new PreauthorizationConfirm($this->bancard, $this->payload);
@@ -42,6 +51,9 @@ class PreauthorizationConfirmTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * PreauthorizationConfirm uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new PreauthorizationConfirm($this->bancard, $this->payload);
@@ -51,6 +63,9 @@ class PreauthorizationConfirmTest extends TestCase
         );
     }
 
+    /**
+     * Execute returns preauthorization confirm response.
+     */
     public function testExecuteReturnsPreauthorizationConfirmResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('preauthorization_confirm_success'));

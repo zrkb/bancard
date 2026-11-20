@@ -43,4 +43,44 @@ class Charge extends Operation
     {
         return ['shop_process_id', 'amount', 'currency', 'alias_token'];
     }
+
+    /**
+     * Get default values for fields missing from the payload.
+     *
+     * @return array<string, mixed>
+     */
+    protected function defaults(): array
+    {
+        return [
+            'number_of_payments' => 1,
+        ];
+    }
+
+    /**
+     * Get integer fields and their maximum digits, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function integerFields(): array
+    {
+        return [
+            'shop_process_id' => 15,
+        ];
+    }
+
+    /**
+     * Get string fields and their maximum length, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function maxLengths(): array
+    {
+        return [
+            'currency' => 3,
+            'alias_token' => 255,
+            'additional_data' => 255,
+            'return_url' => 255,
+            'preauthorization' => 1,
+        ];
+    }
 }

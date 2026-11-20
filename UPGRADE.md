@@ -1,12 +1,12 @@
-# Upgrading from v1 to v2
+# Upgrading from 1.0 to 1.1+
 
 ## PHP Version
 
-v2 requires PHP 8.1 or later. If you need PHP 7.3+ support, use the `1.x` branch.
+1.1+ requires PHP 8.1 or later. If you need PHP 7.3+ support, use 1.0 (the `1.x` branch).
 
 ## Configuration
 
-**Before (v1):**
+**Before (1.0):**
 
 ```php
 use Bancard\Bancard;
@@ -18,7 +18,7 @@ Bancard::setStaging(true);
 $bancard = new Bancard;
 ```
 
-**After (v2):**
+**After (1.1+):**
 
 ```php
 use Bancard\Bancard;
@@ -35,11 +35,11 @@ $bancard = new Bancard(
 Operations are called the same way on the `$bancard` instance, but now return typed response objects instead of raw `stdClass`:
 
 ```php
-// v1: returns stdClass
+// 1.0: returns stdClass
 $response = $bancard->singleBuy([...]);
 echo $response->status;
 
-// v2: returns SingleBuyResponse
+// 1.1+: returns SingleBuyResponse
 $response = $bancard->singleBuy([...]);
 echo $response->getStatus();
 echo $response->isSuccessful(); // true/false
@@ -50,9 +50,9 @@ You can still access the raw response data via `$response->raw()`.
 
 ## SingleBuyConfirm
 
-**Before (v1):** `execute()` returns `false`, token accessed via `token()` method on the operation.
+**Before (1.0):** `execute()` returns `false`, token accessed via `token()` method on the operation.
 
-**After (v2):** Returns a `ConfirmTokenResponse` with `getToken()`:
+**After (1.1+):** Returns a `ConfirmTokenResponse` with `getToken()`:
 
 ```php
 $response = $bancard->singleBuyConfirm([
@@ -69,18 +69,18 @@ $token = $response->getToken();
 `Currency` is now a PHP 8.1 backed enum:
 
 ```php
-// v1
+// 1.0
 use Bancard\Util\Currency;
 $currency = Currency::PYG; // string 'PYG'
 
-// v2
+// 1.1+
 use Bancard\Util\Currency;
 $currency = Currency::PYG->value; // string 'PYG'
 ```
 
 ## Error Handling
 
-v2 validates required fields before making API calls:
+1.1+ validates required fields before making API calls:
 
 ```php
 use Bancard\Exception\ValidationException;

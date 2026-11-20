@@ -17,6 +17,9 @@ class CardsNewTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +60,9 @@ class CardsNewTest extends TestCase
         $this->assertSame('user@example.com', $data['operation']['user_mail']);
     }
 
+    /**
+     * CardsNew token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new CardsNew($this->bancard, $this->payload);
@@ -64,6 +70,9 @@ class CardsNewTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * CardsNew request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new CardsNew($this->bancard, $this->payload);
@@ -75,12 +84,18 @@ class CardsNewTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * CardsNew uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new CardsNew($this->bancard, $this->payload);
         $this->assertSame('/vpos/api/0.3/cards/new', $this->getProtectedProperty($op, 'endpoint'));
     }
 
+    /**
+     * Execute returns cards new response.
+     */
     public function testExecuteReturnsCardsNewResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('cards_new_success'));

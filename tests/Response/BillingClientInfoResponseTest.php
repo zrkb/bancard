@@ -9,6 +9,9 @@ use Bancard\Tests\TestCase;
 
 class BillingClientInfoResponseTest extends TestCase
 {
+    /**
+     * BillingClientInfoResponse: get client.
+     */
     public function testGetClient(): void
     {
         $client = (object) ['name' => 'John Doe', 'document_number' => '123'];
@@ -20,6 +23,9 @@ class BillingClientInfoResponseTest extends TestCase
         $this->assertSame($client, $response->getClient());
     }
 
+    /**
+     * Get client returns null.
+     */
     public function testGetClientReturnsNull(): void
     {
         $response = new BillingClientInfoResponse((object) ['status' => 'success']);

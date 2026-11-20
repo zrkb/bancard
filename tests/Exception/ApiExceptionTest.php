@@ -10,6 +10,9 @@ use PHPUnit\Framework\TestCase;
 
 class ApiExceptionTest extends TestCase
 {
+    /**
+     * ApiException: message from response.
+     */
     public function testMessageFromResponse(): void
     {
         $response = new Response((object) [
@@ -22,6 +25,9 @@ class ApiExceptionTest extends TestCase
         $this->assertSame('Something failed.', $exception->getMessage());
     }
 
+    /**
+     * ApiException: fallback message.
+     */
     public function testFallbackMessage(): void
     {
         $response = new Response((object) ['status' => 'error']);
@@ -30,6 +36,9 @@ class ApiExceptionTest extends TestCase
         $this->assertSame('API request failed', $exception->getMessage());
     }
 
+    /**
+     * ApiException: get response.
+     */
     public function testGetResponse(): void
     {
         $response = new Response((object) ['status' => 'error']);
@@ -38,6 +47,9 @@ class ApiExceptionTest extends TestCase
         $this->assertSame($response, $exception->getResponse());
     }
 
+    /**
+     * ApiException: get error key.
+     */
     public function testGetErrorKey(): void
     {
         $response = new Response((object) [
@@ -50,6 +62,9 @@ class ApiExceptionTest extends TestCase
         $this->assertSame('InvalidOperationError', $exception->getErrorKey());
     }
 
+    /**
+     * ApiException: get status.
+     */
     public function testGetStatus(): void
     {
         $response = new Response((object) ['status' => 'error']);
@@ -58,6 +73,9 @@ class ApiExceptionTest extends TestCase
         $this->assertSame('error', $exception->getStatus());
     }
 
+    /**
+     * ApiException: null delegates.
+     */
     public function testNullDelegates(): void
     {
         $response = new Response((object) []);

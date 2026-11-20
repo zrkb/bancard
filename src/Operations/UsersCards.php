@@ -40,4 +40,16 @@ class UsersCards extends Operation
     {
         return ['user_id'];
     }
+
+    /**
+     * Get integer fields and their maximum digits, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function integerFields(): array
+    {
+        return [
+            'user_id' => 19,
+        ];
+    }
 }

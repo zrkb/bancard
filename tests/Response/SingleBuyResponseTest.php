@@ -9,6 +9,9 @@ use Bancard\Tests\TestCase;
 
 class SingleBuyResponseTest extends TestCase
 {
+    /**
+     * SingleBuyResponse: get process id.
+     */
     public function testGetProcessId(): void
     {
         $response = new SingleBuyResponse((object) [
@@ -19,6 +22,9 @@ class SingleBuyResponseTest extends TestCase
         $this->assertSame('abc123', $response->getProcessId());
     }
 
+    /**
+     * Get process id returns null when missing.
+     */
     public function testGetProcessIdReturnsNullWhenMissing(): void
     {
         $response = new SingleBuyResponse((object) ['status' => 'success']);

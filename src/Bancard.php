@@ -7,6 +7,7 @@ namespace Bancard;
 use Bancard\Exception\ApiException;
 use Bancard\Exception\BancardException;
 use Bancard\Exception\CardNotFoundException;
+use Bancard\Exception\NetworkException;
 use Bancard\Exception\ValidationException;
 use Bancard\Operations\BillingCancel;
 use Bancard\Operations\BillingClientInfo;
@@ -106,14 +107,18 @@ class Bancard
      * @return \stdClass Decoded response body
      *
      * @throws BancardException When the response body is not a JSON object
-     * @throws GuzzleException On network/transport errors
+     * @throws NetworkException On transport errors (timeout, DNS, TLS); the previous exception is Guzzle's
      */
     public function request(string $method, string $url, array $params): \stdClass
     {
-        $response = $this->http->request($method, $url, [
-            'json' => $params,
-            'http_errors' => false,
-        ]);
+        try {
+            $response = $this->http->request($method, $url, [
+                'json' => $params,
+                'http_errors' => false,
+            ]);
+        } catch (GuzzleException $e) {
+            throw new NetworkException("Request to Bancard failed: {$e->getMessage()}", 0, $e);
+        }
 
         $status = $response->getStatusCode();
 
@@ -420,15 +425,14 @@ class Bancard
     }
 
     /**
-     * Send billing (invoice) client information.
+     * Get the electronic invoice client data (name, email) registered for a RUC.
      *
      * @param array{
-     *   client_ruc?: string,
-     *   client_name?: string,
-     *   client_email?: string,
+     *   client_ruc: string,
      * } $payload
      * @return BillingClientInfoResponse
      *
+     * @throws ValidationException
      * @throws ApiException
      * @throws BancardException
      */

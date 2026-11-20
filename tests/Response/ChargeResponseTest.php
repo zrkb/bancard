@@ -9,6 +9,9 @@ use Bancard\Tests\TestCase;
 
 class ChargeResponseTest extends TestCase
 {
+    /**
+     * ChargeResponse: is approved.
+     */
     public function testIsApproved(): void
     {
         $response = new ChargeResponse((object) [
@@ -22,6 +25,9 @@ class ChargeResponseTest extends TestCase
         $this->assertTrue($response->isApproved());
     }
 
+    /**
+     * ChargeResponse: is not approved.
+     */
     public function testIsNotApproved(): void
     {
         $response = new ChargeResponse((object) [
@@ -34,6 +40,9 @@ class ChargeResponseTest extends TestCase
         $this->assertFalse($response->isApproved());
     }
 
+    /**
+     * ChargeResponse: get process id.
+     */
     public function testGetProcessId(): void
     {
         $response = new ChargeResponse((object) [
@@ -47,6 +56,9 @@ class ChargeResponseTest extends TestCase
         $this->assertSame('123', $response->getProcessId());
     }
 
+    /**
+     * ChargeResponse: get response code.
+     */
     public function testGetResponseCode(): void
     {
         $response = new ChargeResponse((object) [
@@ -57,6 +69,9 @@ class ChargeResponseTest extends TestCase
         $this->assertSame('00', $response->getResponseCode());
     }
 
+    /**
+     * ChargeResponse: is 3DS redirect.
+     */
     public function testIs3dsRedirect(): void
     {
         $response = new ChargeResponse((object) [
@@ -67,6 +82,9 @@ class ChargeResponseTest extends TestCase
         $this->assertTrue($response->is3dsRedirect());
     }
 
+    /**
+     * Is not 3DS redirect.
+     */
     public function testIsNot3dsRedirect(): void
     {
         $response = new ChargeResponse((object) [

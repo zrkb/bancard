@@ -17,18 +17,27 @@ class OperationTest extends TestCase
 {
     private Bancard $bancard;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler.
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->bancard = $this->makeBancard();
     }
 
+    /**
+     * Operation: payload returns value.
+     */
     public function testPayloadReturnsValue(): void
     {
         $op = new TestableOperation($this->bancard, ['id' => 'value', 'name' => 'test']);
         $this->assertSame('value', $op->payload('id'));
     }
 
+    /**
+     * Payload throws on missing key.
+     */
     public function testPayloadThrowsOnMissingKey(): void
     {
         $op = new TestableOperation($this->bancard, ['id' => '1', 'name' => 'test']);
@@ -37,6 +46,9 @@ class OperationTest extends TestCase
         $op->payload('missing');
     }
 
+    /**
+     * Data returns correct structure.
+     */
     public function testDataReturnsCorrectStructure(): void
     {
         $op = new TestableOperation($this->bancard, ['id' => '123', 'name' => 'test']);
@@ -50,6 +62,9 @@ class OperationTest extends TestCase
         $this->assertSame('test', $data['operation']['name']);
     }
 
+    /**
+     * Data only filters null.
+     */
     public function testDataOnlyFiltersNull(): void
     {
         $op = new class($this->bancard, [
@@ -64,6 +79,9 @@ class OperationTest extends TestCase
             /** @var class-string<Response> */
             protected string $responseClass = Response::class;
 
+            /**
+             * Generate the token for this test operation.
+             */
             public function token(): string
             {
                 return 'token';
@@ -79,6 +97,9 @@ class OperationTest extends TestCase
         $this->assertArrayNotHasKey('remove_null', $data['operation']);
     }
 
+    /**
+     * Data keeps string zero point zero.
+     */
     public function testDataKeepsStringZeroPointZero(): void
     {
         $op = new class($this->bancard, ['amount' => '0.00']) extends Operation {
@@ -87,6 +108,9 @@ class OperationTest extends TestCase
             /** @var class-string<Response> */
             protected string $responseClass = Response::class;
 
+            /**
+             * Generate the token for this test operation.
+             */
             public function token(): string
             {
                 return 'token';
@@ -97,6 +121,9 @@ class OperationTest extends TestCase
         $this->assertSame('0.00', $data['operation']['amount']);
     }
 
+    /**
+     * Payload token overrides generated token.
+     */
     public function testPayloadTokenOverridesGeneratedToken(): void
     {
         $op = new class($this->bancard, ['token' => 'custom_token']) extends Operation {
@@ -105,6 +132,9 @@ class OperationTest extends TestCase
             /** @var class-string<Response> */
             protected string $responseClass = Response::class;
 
+            /**
+             * Generate the token for this test operation.
+             */
             public function token(): string
             {
                 return 'generated_token';
@@ -115,12 +145,18 @@ class OperationTest extends TestCase
         $this->assertSame('custom_token', $data['operation']['token']);
     }
 
+    /**
+     * Default method is POST.
+     */
     public function testDefaultMethodIsPost(): void
     {
         $op = new TestableOperation($this->bancard, ['id' => '1', 'name' => 'test']);
         $this->assertSame('POST', $this->getProtectedProperty($op, 'method'));
     }
 
+    /**
+     * Data uses public key from client.
+     */
     public function testDataUsesPublicKeyFromClient(): void
     {
         $bancard = $this->makeBancard(publicKey: 'custom_public_key');
@@ -130,6 +166,9 @@ class OperationTest extends TestCase
         $this->assertSame('custom_public_key', $data['public_key']);
     }
 
+    /**
+     * Execute sends correct request.
+     */
     public function testExecuteSendsCorrectRequest(): void
     {
         $this->mockResponse(200, ['status' => 'success']);
@@ -149,6 +188,9 @@ class OperationTest extends TestCase
         $this->assertSame('test', $body['operation']['name']);
     }
 
+    /**
+     * Execute interpolates endpoint placeholders.
+     */
     public function testExecuteInterpolatesEndpointPlaceholders(): void
     {
         $this->mockResponse(200, ['status' => 'success']);
@@ -159,6 +201,9 @@ class OperationTest extends TestCase
         $this->assertRequestSent('POST', '/test/99/resource');
     }
 
+    /**
+     * Validation throws on missing required fields.
+     */
     public function testValidationThrowsOnMissingRequiredFields(): void
     {
         $op = new ValidatedOperation($this->bancard, ['unrelated' => 'value']);
@@ -186,6 +231,9 @@ class OperationTest extends TestCase
         }
     }
 
+    /**
+     * Validation passes with required fields.
+     */
     public function testValidationPassesWithRequiredFields(): void
     {
         $this->mockResponse(200, ['status' => 'success']);
@@ -196,6 +244,9 @@ class OperationTest extends TestCase
         $this->assertTrue($result->isSuccessful());
     }
 
+    /**
+     * Execute throws API exception on failure.
+     */
     public function testExecuteThrowsApiExceptionOnFailure(): void
     {
         $this->mockResponse(200, [
@@ -227,6 +278,9 @@ class TestableOperation extends Operation
     /** @var class-string<Response> */
     protected string $responseClass = Response::class;
 
+    /**
+     * Generate the token for this test operation.
+     */
     public function token(): string
     {
         return Token::make('test_private_key', (string) $this->payload('id'));
@@ -243,6 +297,9 @@ class ValidatedOperation extends Operation
     /** @var class-string<Response> */
     protected string $responseClass = Response::class;
 
+    /**
+     * Generate the token for this test operation.
+     */
     public function token(): string
     {
         return 'token';

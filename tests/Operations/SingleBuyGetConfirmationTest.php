@@ -16,6 +16,9 @@ class SingleBuyGetConfirmationTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +28,9 @@ class SingleBuyGetConfirmationTest extends TestCase
         ];
     }
 
+    /**
+     * SingleBuyGetConfirmation token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new SingleBuyGetConfirmation($this->bancard, $this->payload);
@@ -32,6 +38,9 @@ class SingleBuyGetConfirmationTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * SingleBuyGetConfirmation request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new SingleBuyGetConfirmation($this->bancard, $this->payload);
@@ -42,6 +51,9 @@ class SingleBuyGetConfirmationTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * SingleBuyGetConfirmation uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new SingleBuyGetConfirmation($this->bancard, $this->payload);
@@ -51,6 +63,9 @@ class SingleBuyGetConfirmationTest extends TestCase
         );
     }
 
+    /**
+     * Execute returns confirmation response.
+     */
     public function testExecuteReturnsConfirmationResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('confirmation_success'));
@@ -65,6 +80,9 @@ class SingleBuyGetConfirmationTest extends TestCase
         $this->assertRequestSent('POST', '/vpos/api/0.3/single_buy/confirmations');
     }
 
+    /**
+     * SingleBuyGetConfirmation: pending confirmation.
+     */
     public function testPendingConfirmation(): void
     {
         $this->mockResponse(200, $this->fixtureArray('confirmation_pending'));

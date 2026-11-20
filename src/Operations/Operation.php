@@ -21,6 +21,11 @@ abstract class Operation
      */
     private const AMOUNT_FIELDS = ['amount', 'iva_amount'];
 
+    /**
+     * Maximum integer digits of an amount: the spec's Decimal (15,2) leaves 13.
+     */
+    private const AMOUNT_MAX_INTEGER_DIGITS = 13;
+
     protected string $endpoint;
 
     protected string $method = 'POST';
@@ -34,9 +39,9 @@ abstract class Operation
     /**
      * Create the operation and normalize its payload.
      *
-     * Backed enums (e.g. Currency::PYG) are converted to their value and valid
-     * amounts are formatted with two decimals. Invalid amounts are kept as-is
-     * so validate() can report them.
+     * Missing fields get their defaults(), backed enums (e.g. Currency::PYG) are
+     * converted to their value and valid amounts are formatted with two
+     * decimals. Invalid amounts are kept as-is so validate() can report them.
      *
      * @param Bancard $client Configured Bancard client
      * @param array<string, mixed> $payload Operation fields
@@ -45,7 +50,7 @@ abstract class Operation
         protected readonly Bancard $client,
         array $payload,
     ) {
-        $this->payload = self::normalizePayload($payload);
+        $this->payload = self::normalizePayload($payload + $this->defaults());
     }
 
     /**
@@ -127,11 +132,41 @@ abstract class Operation
     }
 
     /**
-     * Ensure required fields are present and amount fields are well formed.
+     * Get default values for fields missing from the payload.
+     *
+     * @return array<string, mixed>
+     */
+    protected function defaults(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get integer fields and their maximum number of digits, per the vPOS spec ("Entero (n)").
+     *
+     * @return array<string, int>
+     */
+    protected function integerFields(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get string fields and their maximum length in characters, per the vPOS spec ("String (n)").
+     *
+     * @return array<string, int>
+     */
+    protected function maxLengths(): array
+    {
+        return [];
+    }
+
+    /**
+     * Ensure required fields are present and fields match the spec's types and limits.
      *
      * Null counts as missing, since data() drops null values from the request.
      *
-     * @throws ValidationException When a required field is missing or an amount is invalid
+     * @throws ValidationException When a required field is missing or a field is invalid
      */
     protected function validate(): void
     {
@@ -150,7 +185,7 @@ abstract class Operation
         $invalid = [];
 
         foreach (self::AMOUNT_FIELDS as $field) {
-            if (isset($this->payload[$field]) && Amount::normalize($this->payload[$field]) === null) {
+            if (isset($this->payload[$field]) && !self::isValidAmount($this->payload[$field])) {
                 $invalid[] = $field;
             }
         }
@@ -159,9 +194,85 @@ abstract class Operation
             throw new ValidationException(
                 $invalid,
                 'Invalid amount for fields: ' . implode(', ', $invalid)
-                    . '. Expected a non-negative number with at most two decimals, e.g. "10000.00".'
+                    . '. Expected a non-negative number with at most two decimals and '
+                    . self::AMOUNT_MAX_INTEGER_DIGITS . ' integer digits, e.g. "10000.00".'
             );
         }
+
+        $errors = [];
+
+        foreach ($this->integerFields() as $field => $digits) {
+            if (isset($this->payload[$field]) && !self::isValidInteger($this->payload[$field], $digits)) {
+                $errors[$field] = "integer with at most {$digits} digits";
+            }
+        }
+
+        foreach ($this->maxLengths() as $field => $length) {
+            if (isset($this->payload[$field]) && !self::isValidString($this->payload[$field], $length)) {
+                $errors[$field] ??= "string with at most {$length} characters";
+            }
+        }
+
+        if ($errors !== []) {
+            $details = array_map(
+                fn (string $field, string $rule): string => "{$field} ({$rule})",
+                array_keys($errors),
+                $errors
+            );
+
+            throw new ValidationException(array_keys($errors), 'Invalid fields: ' . implode(', ', $details) . '.');
+        }
+    }
+
+    /**
+     * Check that a value is an amount within the spec's Decimal (15,2).
+     *
+     * @param mixed $value Payload value
+     * @return bool
+     */
+    private static function isValidAmount(mixed $value): bool
+    {
+        $amount = Amount::normalize($value);
+
+        return $amount !== null && strlen((string) strstr($amount, '.', true)) <= self::AMOUNT_MAX_INTEGER_DIGITS;
+    }
+
+    /**
+     * Check that a value is a non-negative integer (int or digit string) with at most $digits digits.
+     *
+     * @param mixed $value Payload value
+     * @param int $digits Maximum number of digits
+     * @return bool
+     */
+    private static function isValidInteger(mixed $value, int $digits): bool
+    {
+        if (is_int($value)) {
+            return $value >= 0 && strlen((string) $value) <= $digits;
+        }
+
+        return is_string($value) && preg_match('/^\d{1,' . $digits . '}$/', $value) === 1;
+    }
+
+    /**
+     * Check that a value is a valid UTF-8 string (or number) with at most $length characters.
+     *
+     * @param mixed $value Payload value
+     * @param int $length Maximum length in characters
+     * @return bool
+     */
+    private static function isValidString(mixed $value, int $length): bool
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+
+        if (!is_string($value)) {
+            return false;
+        }
+
+        $characters = preg_match_all('/./su', $value);
+
+        return $characters !== false && $characters <= $length;
     }
 
     /**

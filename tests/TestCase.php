@@ -20,6 +20,14 @@ class TestCase extends BaseTestCase
     /** @var array<int, array<string, mixed>> */
     protected array $requestHistory = [];
 
+    /**
+     * Create a Bancard client whose HTTP requests go to a mock handler and are recorded in $requestHistory.
+     *
+     * @param string $publicKey Public key
+     * @param string $privateKey Private key
+     * @param bool $staging Use the staging base URI
+     * @return Bancard
+     */
     protected function makeBancard(
         string $publicKey = 'test_public_key',
         string $privateKey = 'test_private_key',
@@ -48,7 +56,10 @@ class TestCase extends BaseTestCase
     }
 
     /**
-     * @param array<string, mixed> $body
+     * Queue a JSON response on the mock handler.
+     *
+     * @param int $status HTTP status code
+     * @param array<string, mixed> $body Response body, JSON-encoded
      */
     protected function mockResponse(int $status = 200, array $body = []): void
     {
@@ -57,6 +68,12 @@ class TestCase extends BaseTestCase
         );
     }
 
+    /**
+     * Assert the method and path of the first recorded request.
+     *
+     * @param string $method Expected HTTP method
+     * @param string $path Expected URI path
+     */
     protected function assertRequestSent(string $method, string $path): void
     {
         $this->assertNotEmpty($this->requestHistory, 'No requests were sent.');
@@ -69,6 +86,8 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * Decode the JSON body of the first recorded request.
+     *
      * @return array<string, mixed>
      */
     protected function getRequestBody(): array
@@ -80,12 +99,21 @@ class TestCase extends BaseTestCase
         return json_decode((string) $request->getBody(), true);
     }
 
+    /**
+     * Read a JSON fixture from tests/fixtures.
+     *
+     * @param string $name Fixture name without extension
+     * @return string Raw JSON
+     */
     protected function fixture(string $name): string
     {
         return (string) file_get_contents(__DIR__ . '/fixtures/' . $name . '.json');
     }
 
     /**
+     * Read and decode a JSON fixture from tests/fixtures.
+     *
+     * @param string $name Fixture name without extension
      * @return array<string, mixed>
      */
     protected function fixtureArray(string $name): array
@@ -94,6 +122,13 @@ class TestCase extends BaseTestCase
         return json_decode($this->fixture($name), true);
     }
 
+    /**
+     * Read a non-public property via reflection.
+     *
+     * @param object $object Object to read from
+     * @param string $property Property name
+     * @return mixed Property value
+     */
     protected function getProtectedProperty(object $object, string $property): mixed
     {
         $reflection = new ReflectionProperty($object, $property);

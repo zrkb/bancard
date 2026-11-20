@@ -16,6 +16,9 @@ class ChargeTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +31,9 @@ class ChargeTest extends TestCase
         ];
     }
 
+    /**
+     * Charge token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new Charge($this->bancard, $this->payload);
@@ -35,6 +41,9 @@ class ChargeTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * Charge request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new Charge($this->bancard, $this->payload);
@@ -48,12 +57,18 @@ class ChargeTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * Charge uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new Charge($this->bancard, $this->payload);
         $this->assertSame('/vpos/api/0.3/charge', $this->getProtectedProperty($op, 'endpoint'));
     }
 
+    /**
+     * Execute returns charge response.
+     */
     public function testExecuteReturnsChargeResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('charge_success'));
@@ -69,6 +84,9 @@ class ChargeTest extends TestCase
         $this->assertRequestSent('POST', '/vpos/api/0.3/charge');
     }
 
+    /**
+     * Execute handles 3DS redirect.
+     */
     public function testExecuteHandles3dsRedirect(): void
     {
         $this->mockResponse(200, $this->fixtureArray('charge_3ds_redirect'));

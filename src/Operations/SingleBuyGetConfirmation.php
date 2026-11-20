@@ -40,4 +40,16 @@ class SingleBuyGetConfirmation extends Operation
     {
         return ['shop_process_id'];
     }
+
+    /**
+     * Get integer fields and their maximum digits, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function integerFields(): array
+    {
+        return [
+            'shop_process_id' => 15,
+        ];
+    }
 }

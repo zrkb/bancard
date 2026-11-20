@@ -43,4 +43,31 @@ class CardsNew extends Operation
     {
         return ['card_id', 'user_id', 'user_cell_phone', 'user_mail'];
     }
+
+    /**
+     * Get integer fields and their maximum digits, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function integerFields(): array
+    {
+        return [
+            'card_id' => 19,
+            'user_id' => 19,
+        ];
+    }
+
+    /**
+     * Get string fields and their maximum length, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function maxLengths(): array
+    {
+        return [
+            'user_cell_phone' => 255,
+            'user_mail' => 255,
+            'return_url' => 255,
+        ];
+    }
 }

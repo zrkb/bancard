@@ -13,12 +13,18 @@ class BillingClientInfoTest extends TestCase
 {
     private Bancard $bancard;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler.
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->bancard = $this->makeBancard();
     }
 
+    /**
+     * BillingClientInfo token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new BillingClientInfo($this->bancard, ['some_field' => 'value']);
@@ -26,6 +32,9 @@ class BillingClientInfoTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * Token does not depend on payload.
+     */
     public function testTokenDoesNotDependOnPayload(): void
     {
         $op1 = new BillingClientInfo($this->bancard, ['field_a' => 'aaa']);
@@ -33,6 +42,9 @@ class BillingClientInfoTest extends TestCase
         $this->assertSame($op1->token(), $op2->token());
     }
 
+    /**
+     * BillingClientInfo request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new BillingClientInfo($this->bancard, ['some_field' => 'value']);
@@ -43,6 +55,9 @@ class BillingClientInfoTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * BillingClientInfo uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new BillingClientInfo($this->bancard, ['some_field' => 'value']);
@@ -52,11 +67,14 @@ class BillingClientInfoTest extends TestCase
         );
     }
 
+    /**
+     * Execute returns billing client info response.
+     */
     public function testExecuteReturnsBillingClientInfoResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('billing_client_info_success'));
 
-        $op = new BillingClientInfo($this->bancard, ['some_field' => 'value']);
+        $op = new BillingClientInfo($this->bancard, ['client_ruc' => '123456-7']);
         $response = $op->execute();
 
         $this->assertInstanceOf(BillingClientInfoResponse::class, $response);

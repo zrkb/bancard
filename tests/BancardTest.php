@@ -7,9 +7,12 @@ namespace Bancard\Tests;
 use Bancard\Bancard;
 use Bancard\Exception\ApiException;
 use Bancard\Exception\BancardException;
+use Bancard\Exception\NetworkException;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Http\Message\RequestInterface;
@@ -137,6 +140,63 @@ class BancardTest extends TestCase
     }
 
     /**
+     * Transport errors are wrapped in NetworkException, keeping Guzzle's exception as previous.
+     */
+    public function testTransportErrorThrowsNetworkException(): void
+    {
+        $bancard = $this->makeBancard();
+        $this->mockHandler->append(new ConnectException('Connection refused', new Request('POST', '/')));
+
+        try {
+            $bancard->singleBuyGetConfirmation(['shop_process_id' => '123']);
+            $this->fail('Expected NetworkException was not thrown.');
+        } catch (NetworkException $e) {
+            $this->assertInstanceOf(ConnectException::class, $e->getPrevious());
+            $this->assertStringContainsString('Connection refused', $e->getMessage());
+        }
+    }
+
+    /**
+     * The remaining convenience methods call the right endpoint and return their response types.
+     */
+    public function testRemainingConvenienceMethods(): void
+    {
+        $bancard = $this->makeBancard();
+
+        foreach (['rollback_success', 'cards_new_success', 'preauthorization_confirm_success', 'billing_client_info_success', 'billing_cancel_success'] as $fixture) {
+            $this->mockResponse(200, $this->fixtureArray($fixture));
+        }
+
+        $this->assertSame(
+            md5('test_private_key' . '123' . 'confirm' . '10000.00' . 'PYG'),
+            $bancard->singleBuyConfirm(['shop_process_id' => '123', 'amount' => '10000.00', 'currency' => 'PYG'])->getToken()
+        );
+        $this->assertTrue($bancard->singleBuyRollback(['shop_process_id' => '123'])->isSuccessful());
+        $this->assertSame('card_proc_123', $bancard->cardsNew([
+            'card_id' => '1',
+            'user_id' => '789',
+            'user_cell_phone' => '0981123456',
+            'user_mail' => 'user@example.com',
+        ])->getProcessId());
+        $this->assertTrue($bancard->preauthorizationConfirm(['shop_process_id' => '123'])->isSuccessful());
+        $this->assertNotNull($bancard->billingClientInfo(['client_ruc' => '123456-7'])->getClient());
+        $this->assertTrue($bancard->billingCancel(['shop_process_id' => '123'])->isSuccessful());
+
+        $paths = array_map(
+            fn (array $entry): string => $entry['request']->getUri()->getPath(),
+            $this->requestHistory
+        );
+
+        $this->assertSame([
+            '/vpos/api/0.3/single_buy/rollback',
+            '/vpos/api/0.3/cards/new',
+            '/vpos/api/0.3/preauthorizations/confirm',
+            '/vpos/api/0.3/billing/client_info',
+            '/vpos/api/0.3/billing/cancel',
+        ], $paths);
+    }
+
+    /**
      * Send one request through a client built with the given Guzzle options and return the request options used.
      *
      * @param array<string, mixed> $guzzle Guzzle options passed to the Bancard constructor
@@ -164,6 +224,9 @@ class BancardTest extends TestCase
         return $captured;
     }
 
+    /**
+     * Bancard: constructor sets config.
+     */
     public function testConstructorSetsConfig(): void
     {
         $bancard = new Bancard(
@@ -176,6 +239,9 @@ class BancardTest extends TestCase
         $this->assertFalse($bancard->staging);
     }
 
+    /**
+     * Bancard: constructor sets staging.
+     */
     public function testConstructorSetsStaging(): void
     {
         $bancard = new Bancard(
@@ -187,6 +253,9 @@ class BancardTest extends TestCase
         $this->assertTrue($bancard->staging);
     }
 
+    /**
+     * Staging defaults to false.
+     */
     public function testStagingDefaultsToFalse(): void
     {
         $bancard = new Bancard(
@@ -197,6 +266,9 @@ class BancardTest extends TestCase
         $this->assertFalse($bancard->staging);
     }
 
+    /**
+     * Base URI returns production URL.
+     */
     public function testBaseUriReturnsProductionUrl(): void
     {
         $bancard = new Bancard(
@@ -208,6 +280,9 @@ class BancardTest extends TestCase
         $this->assertSame('https://vpos.infonet.com.py/', $bancard->baseUri());
     }
 
+    /**
+     * Base URI returns staging URL.
+     */
     public function testBaseUriReturnsStagingUrl(): void
     {
         $bancard = new Bancard(
@@ -219,6 +294,9 @@ class BancardTest extends TestCase
         $this->assertSame('https://vpos.infonet.com.py:8888/', $bancard->baseUri());
     }
 
+    /**
+     * Single buy convenience method.
+     */
     public function testSingleBuyConvenienceMethod(): void
     {
         $bancard = $this->makeBancard();
@@ -237,6 +315,9 @@ class BancardTest extends TestCase
         $this->assertRequestSent('POST', '/vpos/api/0.3/single_buy');
     }
 
+    /**
+     * Single buy zimple sets zimple flag.
+     */
     public function testSingleBuyZimpleSetsZimpleFlag(): void
     {
         $bancard = $this->makeBancard();
@@ -257,6 +338,9 @@ class BancardTest extends TestCase
         $this->assertSame('S', $body['operation']['zimple']);
     }
 
+    /**
+     * Bancard: charge convenience method.
+     */
     public function testChargeConvenienceMethod(): void
     {
         $bancard = $this->makeBancard();

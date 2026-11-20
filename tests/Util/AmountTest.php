@@ -72,6 +72,9 @@ class AmountTest extends TestCase
         $this->assertNull(Amount::normalize($input));
     }
 
+    /**
+     * Amount: format float.
+     */
     public function testFormatFloat(): void
     {
         $this->assertSame('10000.00', Amount::format(10000));
@@ -79,6 +82,9 @@ class AmountTest extends TestCase
         $this->assertSame('10000.55', Amount::format(10000.55));
     }
 
+    /**
+     * Amount: format string.
+     */
     public function testFormatString(): void
     {
         $this->assertSame('10000.00', Amount::format('10000'));
@@ -86,6 +92,9 @@ class AmountTest extends TestCase
         $this->assertSame('10000.55', Amount::format('10000.55'));
     }
 
+    /**
+     * Amount: format zero.
+     */
     public function testFormatZero(): void
     {
         $this->assertSame('0.00', Amount::format(0));
@@ -93,11 +102,17 @@ class AmountTest extends TestCase
         $this->assertSame('0.00', Amount::format('0'));
     }
 
+    /**
+     * Format no thousands separator.
+     */
     public function testFormatNoThousandsSeparator(): void
     {
         $this->assertSame('1000000.00', Amount::format(1000000));
     }
 
+    /**
+     * Format truncates extra decimals.
+     */
     public function testFormatTruncatesExtraDecimals(): void
     {
         $this->assertSame('10.12', Amount::format(10.123));

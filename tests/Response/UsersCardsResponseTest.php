@@ -9,6 +9,9 @@ use Bancard\Tests\TestCase;
 
 class UsersCardsResponseTest extends TestCase
 {
+    /**
+     * UsersCardsResponse: get cards.
+     */
     public function testGetCards(): void
     {
         $response = new UsersCardsResponse((object) [
@@ -25,12 +28,18 @@ class UsersCardsResponseTest extends TestCase
         $this->assertSame('token_def', $cards[1]->alias_token);
     }
 
+    /**
+     * Get cards returns empty when no cards.
+     */
     public function testGetCardsReturnsEmptyWhenNoCards(): void
     {
         $response = new UsersCardsResponse((object) ['status' => 'success']);
         $this->assertSame([], $response->getCards());
     }
 
+    /**
+     * Get cards returns empty array.
+     */
     public function testGetCardsReturnsEmptyArray(): void
     {
         $response = new UsersCardsResponse((object) [

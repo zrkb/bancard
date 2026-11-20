@@ -18,6 +18,9 @@ class SingleBuyTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -31,6 +34,9 @@ class SingleBuyTest extends TestCase
         ];
     }
 
+    /**
+     * SingleBuy token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new SingleBuy($this->bancard, $this->payload);
@@ -38,6 +44,9 @@ class SingleBuyTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * SingleBuy request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new SingleBuy($this->bancard, $this->payload);
@@ -50,18 +59,27 @@ class SingleBuyTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * SingleBuy uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new SingleBuy($this->bancard, $this->payload);
         $this->assertSame('/vpos/api/0.3/single_buy', $this->getProtectedProperty($op, 'endpoint'));
     }
 
+    /**
+     * SingleBuy uses the POST method.
+     */
     public function testMethodIsPost(): void
     {
         $op = new SingleBuy($this->bancard, $this->payload);
         $this->assertSame('POST', $this->getProtectedProperty($op, 'method'));
     }
 
+    /**
+     * SingleBuy: execute returns response.
+     */
     public function testExecuteReturnsResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('single_buy_success'));
@@ -75,6 +93,9 @@ class SingleBuyTest extends TestCase
         $this->assertRequestSent('POST', '/vpos/api/0.3/single_buy');
     }
 
+    /**
+     * Execute throws on error response.
+     */
     public function testExecuteThrowsOnErrorResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('single_buy_error'));
@@ -92,6 +113,9 @@ class SingleBuyTest extends TestCase
         }
     }
 
+    /**
+     * Validation throws on missing fields.
+     */
     public function testValidationThrowsOnMissingFields(): void
     {
         $this->expectException(ValidationException::class);

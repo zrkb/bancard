@@ -7,6 +7,8 @@ namespace Bancard\Tests\Operations;
 use Bancard\Bancard;
 use Bancard\Exception\ValidationException;
 use Bancard\Operations\Charge;
+use Bancard\Operations\Operation;
+use Bancard\Response\Response;
 use Bancard\Operations\SingleBuy;
 use Bancard\Operations\SingleBuyConfirm;
 use Bancard\Tests\TestCase;
@@ -187,36 +189,64 @@ class PayloadNormalizationTest extends TestCase
     public static function pathParameters(): array
     {
         return [
-            'plain id' => ['789', '/vpos/api/0.3/users/789/cards'],
-            'traversal with slashes' => ['../../single_buy/rollback?x=', '/vpos/api/0.3/users/%2E%2E%2F%2E%2E%2Fsingle_buy%2Frollback%3Fx%3D/cards'],
-            'dot dot' => ['..', '/vpos/api/0.3/users/%2E%2E/cards'],
-            'single dot' => ['.', '/vpos/api/0.3/users/%2E/cards'],
-            'hash and space' => ['a b#c', '/vpos/api/0.3/users/a%20b%23c/cards'],
+            'plain id' => ['789', '/test/789/resource'],
+            'traversal with slashes' => ['../../single_buy/rollback?x=', '/test/%2E%2E%2F%2E%2E%2Fsingle_buy%2Frollback%3Fx%3D/resource'],
+            'dot dot' => ['..', '/test/%2E%2E/resource'],
+            'single dot' => ['.', '/test/%2E/resource'],
+            'hash and space' => ['a b#c', '/test/a%20b%23c/resource'],
         ];
     }
 
     /**
      * Path parameters are URL-encoded so they cannot change the target endpoint.
+     *
+     * Uses an operation without integer rules, since users_cards/delete reject
+     * non-integer user IDs before encoding is reached.
      */
     #[DataProvider('pathParameters')]
-    public function testPathParametersAreEncoded(string $userId, string $expectedPath): void
+    public function testPathParametersAreEncoded(string $id, string $expectedPath): void
     {
-        $this->mockResponse(200, $this->fixtureArray('users_cards_success'));
+        $this->mockResponse(200, ['status' => 'success']);
 
-        $this->bancard->usersCards(['user_id' => $userId]);
+        $op = new class ($this->bancard, ['id' => $id]) extends Operation {
+            protected string $endpoint = '/test/{id}/resource';
+
+            /** @var class-string<Response> */
+            protected string $responseClass = Response::class;
+
+            /**
+             * Generate a fixed token.
+             *
+             * @return string
+             */
+            public function token(): string
+            {
+                return 'token';
+            }
+        };
+
+        $op->execute();
 
         $this->assertRequestSent('POST', $expectedPath);
     }
 
     /**
-     * DELETE card path parameters are URL-encoded as well.
+     * Non-integer user IDs are rejected before any request on endpoints with a {user_id} path.
      */
-    public function testDeleteCardPathIsEncoded(): void
+    public function testNonIntegerUserIdIsRejectedBeforeRequest(): void
     {
-        $this->mockResponse(200, $this->fixtureArray('delete_card_success'));
+        foreach ([
+            fn () => $this->bancard->usersCards(['user_id' => '../../single_buy/rollback?x=']),
+            fn () => $this->bancard->deleteCard(['user_id' => '..', 'alias_token' => 'alias123']),
+        ] as $call) {
+            try {
+                $call();
+                $this->fail('Expected ValidationException was not thrown.');
+            } catch (ValidationException $e) {
+                $this->assertSame(['user_id'], $e->getErrors());
+            }
+        }
 
-        $this->bancard->deleteCard(['user_id' => '../x', 'alias_token' => 'alias123']);
-
-        $this->assertRequestSent('DELETE', '/vpos/api/0.3/users/%2E%2E%2Fx/cards');
+        $this->assertCount(0, $this->requestHistory);
     }
 }

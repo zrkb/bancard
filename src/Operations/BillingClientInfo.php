@@ -31,4 +31,26 @@ class BillingClientInfo extends Operation
             'billing_client_info',
         );
     }
+
+    /**
+     * Get string fields and their maximum length, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function maxLengths(): array
+    {
+        return [
+            'client_ruc' => 32,
+        ];
+    }
+
+    /**
+     * Get the required payload fields.
+     *
+     * @return list<string>
+     */
+    protected function rules(): array
+    {
+        return ['client_ruc'];
+    }
 }

@@ -16,6 +16,9 @@ class UsersCardsTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +28,9 @@ class UsersCardsTest extends TestCase
         ];
     }
 
+    /**
+     * UsersCards token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new UsersCards($this->bancard, $this->payload);
@@ -32,6 +38,9 @@ class UsersCardsTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * UsersCards request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new UsersCards($this->bancard, $this->payload);
@@ -42,6 +51,9 @@ class UsersCardsTest extends TestCase
         $this->assertArrayHasKey('token', $data['operation']);
     }
 
+    /**
+     * UsersCards uses the spec endpoint.
+     */
     public function testEndpoint(): void
     {
         $op = new UsersCards($this->bancard, $this->payload);
@@ -51,6 +63,9 @@ class UsersCardsTest extends TestCase
         );
     }
 
+    /**
+     * Execute returns users cards response.
+     */
     public function testExecuteReturnsUsersCardsResponse(): void
     {
         $this->mockResponse(200, $this->fixtureArray('users_cards_success'));
@@ -64,6 +79,9 @@ class UsersCardsTest extends TestCase
         $this->assertRequestSent('POST', '/vpos/api/0.3/users/789/cards');
     }
 
+    /**
+     * Execute returns empty cards.
+     */
     public function testExecuteReturnsEmptyCards(): void
     {
         $this->mockResponse(200, $this->fixtureArray('users_cards_empty'));

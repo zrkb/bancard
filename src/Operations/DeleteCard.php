@@ -43,4 +43,28 @@ class DeleteCard extends Operation
     {
         return ['user_id', 'alias_token'];
     }
+
+    /**
+     * Get integer fields and their maximum digits, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function integerFields(): array
+    {
+        return [
+            'user_id' => 19,
+        ];
+    }
+
+    /**
+     * Get string fields and their maximum length, per the vPOS spec.
+     *
+     * @return array<string, int>
+     */
+    protected function maxLengths(): array
+    {
+        return [
+            'alias_token' => 255,
+        ];
+    }
 }

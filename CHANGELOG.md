@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5
+
+### Behavior Changes
+
+- **Fields are validated against the vPOS spec**: `shop_process_id` (Entero 15; not for rollback/billing cancel), `card_id`/`user_id` (Entero 19), string lengths (`description` 20, `currency` 3, `client_ruc` 32, URLs/`additional_data`/`alias_token`/`user_cell_phone`/`user_mail` 255) and amounts (Decimal 15,2). Violations throw `ValidationException` listing every invalid field.
+- **Network errors throw `NetworkException`**: timeouts, DNS and TLS failures are wrapped (Guzzle's exception is `getPrevious()`), so every SDK error extends `BancardException`.
+- **`number_of_payments` defaults to 1** for `charge()`/`chargeCard()`, as the spec requires for debit cards. Pass `null` to omit it.
+- **`billingClientInfo` requires `client_ruc`**: the spec's only request field (`client_name`/`client_email` were response fields, removed from the payload shape).
+
+### Internal
+
+- PHPDoc on every function in `src/` and `tests/`.
+- Tests for the remaining convenience methods and `Response` message branches.
+- `Operation` gains `defaults()`, `integerFields()` and `maxLengths()` hooks.
+
 ## 1.4
 
 ### Behavior Changes
@@ -46,7 +61,7 @@
 
 - **Guzzle 8 support**: `guzzlehttp/guzzle` constraint widened to `^7.0 || ^8.0`.
 
-## v2.0.0
+## 1.1
 
 ### Breaking Changes
 

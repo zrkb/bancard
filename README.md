@@ -215,10 +215,10 @@ if ($response->isApproved()) {
 
 ```php
 $response = $bancard->billingClientInfo([
-    // billing client info fields
+    'client_ruc' => '123456-7',
 ]);
 
-$client = $response->getClient();
+$client = $response->getClient(); // ->name, ->email
 ```
 
 ### Billing Cancel
@@ -246,22 +246,37 @@ Specialized responses add operation-specific methods (e.g., `getProcessId()`, `i
 ```php
 use Bancard\Exception\ApiException;
 use Bancard\Exception\BancardException;
+use Bancard\Exception\NetworkException;
 use Bancard\Exception\ValidationException;
 
 try {
     $response = $bancard->singleBuy($payload);
 } catch (ValidationException $e) {
-    // Missing required fields or invalid amount
-    $errors = $e->getErrors(); // ['shop_process_id', 'amount', 'currency']
+    // Missing required field, invalid amount, or a field over the spec's limits
+    $errors = $e->getErrors(); // ['shop_process_id', 'description']
 } catch (ApiException $e) {
     // Bancard returned a non-success status (any HTTP status code)
     $key = $e->getErrorKey(); // e.g. 'InvalidOperationError'
+} catch (NetworkException $e) {
+    // Timeout, DNS or TLS failure; $e->getPrevious() is Guzzle's exception
 } catch (BancardException $e) {
     // Response was not valid JSON (e.g. gateway error page); $e->getCode() is the HTTP status
 }
 ```
 
-Network errors (timeouts, DNS, TLS) still throw `GuzzleHttp\Exception\GuzzleException`.
+Every exception extends `BancardException`, so one `catch (BancardException $e)` covers them all.
+
+After a `NetworkException` on a payment the outcome is unknown: Bancard may have processed it. Check with `singleBuyGetConfirmation()` before retrying with the same `shop_process_id`.
+
+### Field Validation
+
+Fields are checked against the vPOS spec before sending, so mistakes fail locally with the field names instead of as `InvalidOperationError`:
+
+- Integers: `shop_process_id` (max 15 digits; rollback and billing cancel accept any string), `card_id` and `user_id` (max 19 digits)
+- Strings: `description` (20 chars), `currency` (3), `client_ruc` (32), URLs, `additional_data`, `alias_token`, `user_cell_phone` and `user_mail` (255)
+- Amounts: at most 13 integer digits and 2 decimals
+
+`charge()` and `chargeCard()` send `number_of_payments: 1` unless you pass another value (the spec requires 1 for debit cards).
 
 ## Amounts and Currency
 
@@ -286,7 +301,7 @@ $formatted = Amount::format(10000);      // "10000.00"
 $normalized = Amount::normalize('10.5'); // "10.50" (null if invalid)
 ```
 
-## Upgrading from v1
+## Upgrading from 1.0
 
 See [UPGRADE.md](UPGRADE.md) for the migration guide.
 

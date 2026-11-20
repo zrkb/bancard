@@ -16,6 +16,9 @@ class SingleBuyConfirmTest extends TestCase
     /** @var array<string, string> */
     private array $payload;
 
+    /**
+     * Create a Bancard client with a mocked HTTP handler and a default payload.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -27,6 +30,9 @@ class SingleBuyConfirmTest extends TestCase
         ];
     }
 
+    /**
+     * SingleBuyConfirm token matches the spec formula.
+     */
     public function testToken(): void
     {
         $op = new SingleBuyConfirm($this->bancard, $this->payload);
@@ -34,6 +40,9 @@ class SingleBuyConfirmTest extends TestCase
         $this->assertSame($expected, $op->token());
     }
 
+    /**
+     * Execute returns confirm token response.
+     */
     public function testExecuteReturnsConfirmTokenResponse(): void
     {
         $op = new SingleBuyConfirm($this->bancard, $this->payload);
@@ -43,6 +52,9 @@ class SingleBuyConfirmTest extends TestCase
         $this->assertSame($op->token(), $result->getToken());
     }
 
+    /**
+     * Execute does not make HTTP request.
+     */
     public function testExecuteDoesNotMakeHttpRequest(): void
     {
         $op = new SingleBuyConfirm($this->bancard, $this->payload);
@@ -51,6 +63,9 @@ class SingleBuyConfirmTest extends TestCase
         $this->assertEmpty($this->requestHistory);
     }
 
+    /**
+     * SingleBuyConfirm request body contains the public key, payload and token.
+     */
     public function testData(): void
     {
         $op = new SingleBuyConfirm($this->bancard, $this->payload);
