@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bancard\Tests\Operations;
 
 use Bancard\Bancard;
+use Bancard\Exception\ValidationException;
 use Bancard\Operations\CardsNew;
 use Bancard\Response\CardsNewResponse;
 use Bancard\Tests\TestCase;
@@ -23,8 +24,37 @@ class CardsNewTest extends TestCase
         $this->payload = [
             'card_id' => '456',
             'user_id' => '789',
+            'user_cell_phone' => '0981123456',
+            'user_mail' => 'user@example.com',
             'return_url' => 'https://example.com/return',
         ];
+    }
+
+    /**
+     * user_cell_phone and user_mail are required by the spec.
+     */
+    public function testValidationRequiresUserContactFields(): void
+    {
+        $op = new CardsNew($this->bancard, ['card_id' => '456', 'user_id' => '789']);
+
+        try {
+            $op->execute();
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $e) {
+            $this->assertSame(['user_cell_phone', 'user_mail'], $e->getErrors());
+            $this->assertCount(0, $this->requestHistory);
+        }
+    }
+
+    /**
+     * Contact fields are sent but not part of the token.
+     */
+    public function testDataIncludesUserContactFields(): void
+    {
+        $data = (new CardsNew($this->bancard, $this->payload))->data();
+
+        $this->assertSame('0981123456', $data['operation']['user_cell_phone']);
+        $this->assertSame('user@example.com', $data['operation']['user_mail']);
     }
 
     public function testToken(): void

@@ -6,6 +6,7 @@ namespace Bancard;
 
 use Bancard\Exception\ApiException;
 use Bancard\Exception\BancardException;
+use Bancard\Exception\CardNotFoundException;
 use Bancard\Exception\ValidationException;
 use Bancard\Operations\BillingCancel;
 use Bancard\Operations\BillingClientInfo;
@@ -266,6 +267,8 @@ class Bancard
      * @param array{
      *   card_id: int|string,
      *   user_id: int|string,
+     *   user_cell_phone: string,
+     *   user_mail: string,
      *   return_url?: string,
      *   cancel_url?: string,
      *   billing?: array<string, mixed>,
@@ -306,6 +309,8 @@ class Bancard
      *   amount: int|float|string,
      *   currency: Currency|string,
      *   alias_token: string,
+     *   number_of_payments?: int,
+     *   return_url?: string,
      *   description?: string,
      *   additional_data?: string,
      *   iva_amount?: int|float|string,
@@ -322,6 +327,61 @@ class Bancard
     public function charge(array $payload): ChargeResponse
     {
         return (new Charge($this, $payload))->execute();
+    }
+
+    /**
+     * Charge a registered card by card_id, fetching a fresh alias token first.
+     *
+     * Bancard alias tokens are single-use and expire within minutes, so store
+     * user_id + card_id and use this for repeat payments (e.g. subscriptions).
+     * Sends two requests: users_cards, then charge. Missing fields are
+     * checked before any request.
+     *
+     * @param array{
+     *   user_id: int|string,
+     *   card_id: int|string,
+     *   shop_process_id: int|string,
+     *   amount: int|float|string,
+     *   currency: Currency|string,
+     *   number_of_payments?: int,
+     *   return_url?: string,
+     *   description?: string,
+     *   additional_data?: string,
+     *   iva_amount?: int|float|string,
+     *   preauthorization?: string,
+     *   extra_response_attributes?: list<string>,
+     *   billing?: array<string, mixed>,
+     * } $payload
+     * @return ChargeResponse
+     *
+     * @throws ValidationException When required fields are missing or the amount is invalid
+     * @throws CardNotFoundException When the user has no card with that card_id
+     * @throws ApiException
+     * @throws BancardException
+     */
+    public function chargeCard(array $payload): ChargeResponse
+    {
+        $missing = array_values(array_filter(
+            ['user_id', 'card_id', 'shop_process_id', 'amount', 'currency'],
+            fn (string $field): bool => !isset($payload[$field])
+        ));
+
+        if ($missing !== []) {
+            throw new ValidationException($missing);
+        }
+
+        $card = $this->usersCards(['user_id' => $payload['user_id']])->findCard($payload['card_id']);
+        $aliasToken = $card->alias_token ?? null;
+
+        if (!is_string($aliasToken) || $aliasToken === '') {
+            throw new CardNotFoundException((string) $payload['user_id'], (string) $payload['card_id']);
+        }
+
+        $charge = $payload;
+        unset($charge['user_id'], $charge['card_id']);
+        $charge['alias_token'] = $aliasToken;
+
+        return (new Charge($this, $charge))->execute();
     }
 
     /**

@@ -128,6 +128,8 @@ $response = $bancard->singleBuyRollback([
 $response = $bancard->cardsNew([
     'card_id' => '123',
     'user_id' => '456',
+    'user_cell_phone' => '0981123456',
+    'user_mail' => 'user@example.com',
     'return_url' => 'https://app.test/return',
 ]);
 
@@ -164,6 +166,29 @@ if ($response->is3dsRedirect()) {
     // 3DS authentication required
 }
 ```
+
+### Charge a Saved Card (Recurring Payments)
+
+Alias tokens are single-use and expire within minutes, so don't store them. Store `user_id` + `card_id` and use `chargeCard()`: it fetches a fresh alias token with `usersCards()` and then charges.
+
+```php
+use Bancard\Exception\CardNotFoundException;
+
+try {
+    $response = $bancard->chargeCard([
+        'user_id' => '456',
+        'card_id' => '123',
+        'shop_process_id' => '7777778',
+        'amount' => 10000,
+        'currency' => Currency::PYG,
+        'number_of_payments' => 1,
+    ]);
+} catch (CardNotFoundException $e) {
+    // Card was deleted or never registered for this user
+}
+```
+
+To pick the alias token yourself, use `$bancard->usersCards([...])->findCard($cardId)`.
 
 ### Delete Card
 

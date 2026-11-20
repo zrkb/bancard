@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.4
+
+### Behavior Changes
+
+- **`cardsNew` requires `user_cell_phone` and `user_mail`**: both are mandatory per the vPOS spec; missing values now throw `ValidationException` before the request.
+
+### New
+
+- **`Bancard::chargeCard()`**: charges a saved card by `user_id` + `card_id`, fetching a fresh alias token via `users_cards` first (alias tokens are single-use and expire within minutes). Throws `CardNotFoundException` when the card is not registered.
+- **`UsersCardsResponse::findCard()`**: finds a card by `card_id` (string or int).
+- `number_of_payments` and `return_url` documented in the `charge()` payload shape.
+
+### Fixes
+
+- `UsersCardsResponse::getCards()` skips non-object entries.
+
 ## 1.3
 
 ### Behavior Changes

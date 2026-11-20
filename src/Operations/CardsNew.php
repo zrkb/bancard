@@ -35,10 +35,12 @@ class CardsNew extends Operation
     }
 
     /**
+     * Get the required payload fields (all four are mandatory per the vPOS spec).
+     *
      * @return list<string>
      */
     protected function rules(): array
     {
-        return ['card_id', 'user_id'];
+        return ['card_id', 'user_id', 'user_cell_phone', 'user_mail'];
     }
 }
