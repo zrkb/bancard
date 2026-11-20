@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2
+
+- **Guzzle 8 support**: `guzzlehttp/guzzle` constraint widened to `^7.0 || ^8.0`.
+
 ## v2.0.0
 
 ### Breaking Changes
