@@ -117,6 +117,24 @@ class SpecLimitsTest extends TestCase
     }
 
     /**
+     * Numbers in string fields are measured as strings; arrays are rejected.
+     */
+    public function testStringFieldsMeasureNumbersAndRejectArrays(): void
+    {
+        $this->mockResponse(200, $this->fixtureArray('single_buy_success'));
+        (new SingleBuy($this->bancard, self::SINGLE_BUY + ['description' => 12345]))->execute();
+        $this->assertCount(1, $this->requestHistory);
+
+        try {
+            (new SingleBuy($this->bancard, self::SINGLE_BUY + ['description' => ['x']]))->execute();
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $e) {
+            $this->assertSame(['description'], $e->getErrors());
+            $this->assertCount(1, $this->requestHistory);
+        }
+    }
+
+    /**
      * Amounts above Decimal (15,2) are rejected.
      */
     public function testAmountOverThirteenIntegerDigitsIsRejected(): void
