@@ -17,6 +17,13 @@ class SingleBuy extends Operation
     /** @var class-string<SingleBuyResponse> */
     protected string $responseClass = SingleBuyResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + shop_process_id + amount + currency)
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

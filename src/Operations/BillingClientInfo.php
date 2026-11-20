@@ -17,6 +17,13 @@ class BillingClientInfo extends Operation
     /** @var class-string<BillingClientInfoResponse> */
     protected string $responseClass = BillingClientInfoResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + "billing_client_info")
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

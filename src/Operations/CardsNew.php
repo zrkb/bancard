@@ -17,6 +17,13 @@ class CardsNew extends Operation
     /** @var class-string<CardsNewResponse> */
     protected string $responseClass = CardsNewResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + card_id + user_id + "request_new_card")
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

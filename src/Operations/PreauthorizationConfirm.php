@@ -17,6 +17,13 @@ class PreauthorizationConfirm extends Operation
     /** @var class-string<PreauthorizationConfirmResponse> */
     protected string $responseClass = PreauthorizationConfirmResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + shop_process_id + "pre-authorization-confirm")
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

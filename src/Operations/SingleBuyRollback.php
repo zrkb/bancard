@@ -17,6 +17,13 @@ class SingleBuyRollback extends Operation
     /** @var class-string<RollbackResponse> */
     protected string $responseClass = RollbackResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + shop_process_id + "rollback" + "0.00")
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

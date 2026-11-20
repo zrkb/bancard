@@ -6,17 +6,23 @@ namespace Bancard\Response;
 
 class PreauthorizationConfirmResponse extends Response
 {
+    /**
+     * Get the confirmation data.
+     *
+     * @return \stdClass|null
+     */
     public function getConfirmation(): ?\stdClass
     {
-        return $this->data->confirmation ?? null;
+        return self::objectValue($this->data->confirmation ?? null);
     }
 
+    /**
+     * Check whether the preauthorization was approved (response code "00").
+     *
+     * @return bool
+     */
     public function isApproved(): bool
     {
-        $confirmation = $this->getConfirmation();
-
-        return $confirmation !== null
-            && isset($confirmation->response_code)
-            && $confirmation->response_code === '00';
+        return self::stringValue($this->getConfirmation()->response_code ?? null) === '00';
     }
 }

@@ -17,6 +17,13 @@ class Charge extends Operation
     /** @var class-string<ChargeResponse> */
     protected string $responseClass = ChargeResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + shop_process_id + "charge" + amount + currency + alias_token)
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

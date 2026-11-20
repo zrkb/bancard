@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.3
+
+### Behavior Changes
+
+- **HTTP error statuses no longer throw Guzzle exceptions**: 4xx/5xx responses with a Bancard JSON body now raise `ApiException` (with error key), instead of `GuzzleHttp\Exception\ClientException`/`ServerException`.
+- **Non-JSON responses raise `BancardException`**: Empty, HTML or non-object bodies throw `BancardException` (code = HTTP status) instead of a `TypeError`.
+- **Default timeouts**: `timeout` 30s and `connect_timeout` 10s (`Bancard::DEFAULT_TIMEOUT`, `Bancard::DEFAULT_CONNECT_TIMEOUT`). Override via the `guzzle` constructor option.
+- **Amount validation**: `amount`/`iva_amount` values that are not non-negative numbers with at most two decimals throw `ValidationException`.
+- **Null required fields**: a required field set to `null` now throws `ValidationException` (previously `InvalidArgumentException`).
+
+### Fixes
+
+- **Amounts are normalized**: ints, floats and numeric strings are sent and signed as `"0.00"`, fixing token mismatches for values like `10000`.
+- **`Currency` enum accepted in payloads**: backed enums are converted to their value (previously threw `Error`).
+- **Path parameters are URL-encoded**: `user_id` in `/users/{user_id}/cards` can no longer alter the request path (e.g. `../`).
+- **Private key redacted**: hidden from `var_dump()`/`print_r()` (`__debugInfo()`) and stack traces (`#[\SensitiveParameter]`).
+- **Response getters tolerate numeric JSON**: IDs/codes sent as numbers are returned as strings; non-object `confirmation`/`client` return `null` (previously `TypeError`).
+
+### New
+
+- `Bancard::verifyConfirmation()` verifies the confirmation callback token with `hash_equals()`.
+- `Bancard::setHttp()` accepts any `GuzzleHttp\ClientInterface`.
+- `Amount::normalize()` returns the formatted amount, or `null` if invalid.
+- `ValidationException` accepts an optional custom message.
+- PHPDoc on all `src/` methods.
+
 ## 1.2
 
 - **Guzzle 8 support**: `guzzlehttp/guzzle` constraint widened to `^7.0 || ^8.0`.

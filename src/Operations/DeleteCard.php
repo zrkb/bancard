@@ -19,6 +19,13 @@ class DeleteCard extends Operation
     /** @var class-string<DeleteCardResponse> */
     protected string $responseClass = DeleteCardResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + "delete_card" + user_id + alias_token)
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

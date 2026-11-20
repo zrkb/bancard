@@ -17,6 +17,13 @@ class SingleBuyGetConfirmation extends Operation
     /** @var class-string<ConfirmationResponse> */
     protected string $responseClass = ConfirmationResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + shop_process_id + "get_confirmation")
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

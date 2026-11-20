@@ -26,6 +26,13 @@ class SingleBuyConfirm extends Operation
         return new ConfirmTokenResponse($this->token());
     }
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + shop_process_id + "confirm" + amount + currency)
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

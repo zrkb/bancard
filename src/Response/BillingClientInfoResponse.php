@@ -6,8 +6,13 @@ namespace Bancard\Response;
 
 class BillingClientInfoResponse extends Response
 {
+    /**
+     * Get the billing client data.
+     *
+     * @return \stdClass|null
+     */
     public function getClient(): ?\stdClass
     {
-        return $this->data->client ?? null;
+        return self::objectValue($this->data->client ?? null);
     }
 }

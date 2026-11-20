@@ -17,6 +17,13 @@ class UsersCards extends Operation
     /** @var class-string<UsersCardsResponse> */
     protected string $responseClass = UsersCardsResponse::class;
 
+    /**
+     * Generate the operation token.
+     *
+     * Token: md5(private_key + user_id + "request_user_cards")
+     *
+     * @return string MD5 hash
+     */
     public function token(): string
     {
         return Token::make(

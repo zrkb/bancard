@@ -24,8 +24,13 @@ $bancard = new Bancard(
     publicKey: 'YOUR_PUBLIC_KEY',
     privateKey: 'YOUR_PRIVATE_KEY',
     staging: true, // optional, defaults to false
+    guzzle: ['timeout' => 15], // optional Guzzle options
 );
 ```
+
+Requests time out after 30 seconds (10 seconds to connect) by default. Override with the `timeout` and `connect_timeout` Guzzle options.
+
+The private key is hidden from `var_dump()`/`print_r()` and stack traces.
 
 ## Usage
 
@@ -74,6 +79,28 @@ $response = $bancard->singleBuyConfirm([
 
 $token = $response->getToken();
 ```
+
+### Verify Confirmation Callback
+
+Bancard POSTs the payment result to your confirmation URL. Verify its token before trusting it (constant-time comparison; returns `false` for tampered or malformed input):
+
+```php
+$body = json_decode((string) file_get_contents('php://input'), true);
+$operation = is_array($body['operation'] ?? null) ? $body['operation'] : [];
+
+if (!$bancard->verifyConfirmation($operation)) {
+    http_response_code(400);
+    exit;
+}
+
+// Trusted: $operation['response_code'], $operation['shop_process_id'], ...
+
+http_response_code(200);
+header('Content-Type: application/json');
+echo json_encode(['status' => 'success']);
+```
+
+Bancard expects HTTP 200 within 30 seconds. If it does not get one, the payment is not necessarily denied: check it with `singleBuyGetConfirmation()`.
 
 ### Single Buy Get Confirmation
 
@@ -192,22 +219,46 @@ Specialized responses add operation-specific methods (e.g., `getProcessId()`, `i
 ## Error Handling
 
 ```php
+use Bancard\Exception\ApiException;
+use Bancard\Exception\BancardException;
 use Bancard\Exception\ValidationException;
 
 try {
     $response = $bancard->singleBuy($payload);
 } catch (ValidationException $e) {
-    // Missing required fields
+    // Missing required fields or invalid amount
     $errors = $e->getErrors(); // ['shop_process_id', 'amount', 'currency']
+} catch (ApiException $e) {
+    // Bancard returned a non-success status (any HTTP status code)
+    $key = $e->getErrorKey(); // e.g. 'InvalidOperationError'
+} catch (BancardException $e) {
+    // Response was not valid JSON (e.g. gateway error page); $e->getCode() is the HTTP status
 }
 ```
 
-## Amount Formatting
+Network errors (timeouts, DNS, TLS) still throw `GuzzleHttp\Exception\GuzzleException`.
+
+## Amounts and Currency
+
+`amount` and `iva_amount` accept ints, floats or numeric strings and are sent and signed as `"10000.00"`. Strings with more than two decimals, separators like `"10,000"` or negative values throw `ValidationException`.
+
+`currency` accepts the `Currency` enum or its string value:
+
+```php
+use Bancard\Util\Currency;
+
+$bancard->singleBuy([
+    'shop_process_id' => '7777777',
+    'amount' => 10000,             // sent as "10000.00"
+    'currency' => Currency::PYG,   // sent as "PYG"
+]);
+```
 
 ```php
 use Bancard\Util\Amount;
 
-$formatted = Amount::format(10000); // "10000.00"
+$formatted = Amount::format(10000);      // "10000.00"
+$normalized = Amount::normalize('10.5'); // "10.50" (null if invalid)
 ```
 
 ## Upgrading from v1

@@ -170,6 +170,22 @@ class OperationTest extends TestCase
         $op->execute();
     }
 
+    /**
+     * A null required field is reported as missing, not as InvalidArgumentException.
+     */
+    public function testValidationTreatsNullAsMissing(): void
+    {
+        $op = new ValidatedOperation($this->bancard, ['required_field' => null]);
+
+        try {
+            $op->execute();
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $e) {
+            $this->assertSame(['required_field'], $e->getErrors());
+            $this->assertCount(0, $this->requestHistory);
+        }
+    }
+
     public function testValidationPassesWithRequiredFields(): void
     {
         $this->mockResponse(200, ['status' => 'success']);
