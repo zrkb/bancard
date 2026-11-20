@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bancard\Tests\Operations;
 
 use Bancard\Bancard;
+use Bancard\Exception\ValidationException;
 use Bancard\Operations\Charge;
 use Bancard\Response\ChargeResponse;
 use Bancard\Tests\TestCase;
@@ -28,6 +29,7 @@ class ChargeTest extends TestCase
             'amount' => '10000.00',
             'currency' => 'PYG',
             'alias_token' => 'alias123',
+            'description' => 'Order 123',
         ];
     }
 
@@ -95,5 +97,95 @@ class ChargeTest extends TestCase
         $response = $op->execute();
 
         $this->assertTrue($response->is3dsRedirect());
+    }
+
+    /**
+     * The staging-verified approved response exposes the confirmation details.
+     */
+    public function testApprovedChargeDetails(): void
+    {
+        $this->mockResponse(200, $this->fixtureArray('charge_success'));
+
+        $response = (new Charge($this->bancard, $this->payload))->execute();
+
+        $this->assertTrue($response->isApproved());
+        $this->assertFalse($response->requires3ds());
+        $this->assertNull($response->get3dsProcessId());
+        $this->assertFalse($response->is3dsRedirect());
+        $this->assertSame('123', $response->getShopProcessId());
+        $this->assertSame('932557', $response->getAuthorizationNumber());
+        $this->assertSame('2119288713', $response->getTicketNumber());
+        $this->assertSame('Transaccion aprobada', $response->getResponseDescription());
+        $this->assertSame('L', $response->getCardSource());
+        $this->assertSame(0, $response->getRiskIndex());
+    }
+
+    /**
+     * A non-null confirmation.process_id means 3DS authentication is required.
+     */
+    public function testThreeDsRequired(): void
+    {
+        $this->mockResponse(200, $this->fixtureArray('charge_3ds_required'));
+
+        $response = (new Charge($this->bancard, $this->payload))->execute();
+
+        $this->assertTrue($response->requires3ds());
+        $this->assertSame('i5fn*lx6niQel0QzWK1g', $response->get3dsProcessId());
+        $this->assertTrue($response->is3dsRedirect());
+        $this->assertFalse($response->isApproved());
+        $this->assertNull($response->getShopProcessId());
+    }
+
+    /**
+     * The spec's 3DS example shape ({"operation": {"process_id": ...}}) is also detected; empty IDs are not.
+     */
+    public function testThreeDsProcessIdShapes(): void
+    {
+        $this->assertSame('abc', (new ChargeResponse((object) ['operation' => (object) ['process_id' => 'abc']]))->get3dsProcessId());
+        $this->assertFalse((new ChargeResponse((object) ['confirmation' => (object) ['process_id' => '']]))->requires3ds());
+        $this->assertFalse((new ChargeResponse((object) ['status' => 'success']))->requires3ds());
+    }
+
+    /**
+     * Charge sends the defaults Bancard needs: number_of_payments, additional_data and the 3DS attribute.
+     */
+    public function testDefaults(): void
+    {
+        $operation = (new Charge($this->bancard, $this->payload))->data()['operation'];
+
+        $this->assertSame(1, $operation['number_of_payments']);
+        $this->assertSame('', $operation['additional_data']);
+        $this->assertSame(['confirmation.process_id'], $operation['extra_response_attributes']);
+    }
+
+    /**
+     * Explicit values replace the defaults, and null omits them.
+     */
+    public function testDefaultsCanBeOverriddenOrOmitted(): void
+    {
+        $operation = (new Charge($this->bancard, [
+            'additional_data' => '099VS ORO000045',
+            'extra_response_attributes' => null,
+        ] + $this->payload))->data()['operation'];
+
+        $this->assertSame('099VS ORO000045', $operation['additional_data']);
+        $this->assertArrayNotHasKey('extra_response_attributes', $operation);
+    }
+
+    /**
+     * description is required and must not be empty, since Bancard rejects charges without it.
+     */
+    public function testDescriptionIsRequired(): void
+    {
+        foreach ([null, ''] as $description) {
+            try {
+                (new Charge($this->bancard, ['description' => $description] + $this->payload))->execute();
+                $this->fail('Expected ValidationException was not thrown.');
+            } catch (ValidationException $e) {
+                $this->assertSame(['description'], $e->getErrors());
+            }
+        }
+
+        $this->assertCount(0, $this->requestHistory);
     }
 }

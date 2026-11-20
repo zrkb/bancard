@@ -92,7 +92,9 @@ $token = $response->getToken();
 </script>
 ```
 
-Use `Bancard.Zimple.createForm` for Zimple and `Bancard.Cards.createForm` for card registration. The URL follows the `staging` flag (`bancard-checkout-4.0.0.js`, `Bancard::CHECKOUT_JS_VERSION`).
+Use `Bancard.Zimple.createForm` for Zimple, `Bancard.Cards.createForm` for card registration and `Bancard.Charge3DS.createForm` for [3DS](#charge-token-based-payment). The URL follows the `staging` flag (`bancard-checkout-4.0.0.js`, `Bancard::CHECKOUT_JS_VERSION`).
+
+The payment form also offers QR and PIX when they are enabled in the application profile of the commerce portal. They need no extra integration: the result arrives at the same confirmation callback.
 
 ### Confirmation Callback
 
@@ -123,6 +125,8 @@ echo json_encode(ConfirmationCallback::ACKNOWLEDGEMENT); // {"status":"success"}
 
 In Laravel: `$bancard->parseConfirmation($request->getContent())` and `return response()->json(ConfirmationCallback::ACKNOWLEDGEMENT);`.
 
+With electronic invoicing (`billing`), `getInvoiceNumber()` and `getCdc()` return the generated invoice number and control code.
+
 Bancard expects HTTP 200 within 30 seconds. If it does not get one, the payment is not necessarily denied: check it with `singleBuyGetConfirmation()`.
 
 To check an already decoded `operation` array, use `$bancard->verifyConfirmation($operation)` (returns `bool`).
@@ -132,14 +136,21 @@ To check an already decoded `operation` array, use `$bancard->verifyConfirmation
 ```php
 $response = $bancard->singleBuyGetConfirmation([
     'shop_process_id' => '7777777',
+    'extra_response_attributes' => ['confirmation.extra_attributes'], // optional
 ]);
 
 if ($response->isApproved()) {
     $ticket = $response->getTicketNumber();
+    $type = $response->getPaymentCardType(); // "credit", "debit" or "account_debit"
+    $response->getPaymentCardBrand();         // e.g. "MC"
+    $response->getPaymentMaskedCardNumber();  // e.g. "541863******0014"
+    $response->getPaymentOrigin();            // e.g. "VPOS-FORM", "VPOS-TOKEN"
 }
 ```
 
-`singleBuyGetConfirmation()` and `preauthorizationConfirm()` responses have the same getters as the confirmation callback (`getResponseCode()`, `getAuthorizationNumber()`, `getTicketNumber()`, `getCardSource()`, `getRiskIndex()`, ...).
+While the customer has not paid yet, this throws `ApiException` with key `PaymentNotFoundError`.
+
+`singleBuyGetConfirmation()`, `preauthorizationConfirm()` and `charge()` responses have the same getters as the confirmation callback (`getResponseCode()`, `getAuthorizationNumber()`, `getTicketNumber()`, `getCardSource()`, `getRiskIndex()`, ...).
 
 ### Single Buy Rollback
 
@@ -163,15 +174,18 @@ $response = $bancard->cardsNew([
 $processId = $response->getProcessId();
 ```
 
+Mount `Bancard.Cards.createForm` with the `process_id` ([Payment Form](#payment-form-bancard-checkoutjs)). Bancard then redirects to `return_url` with `?status=add_new_card_success`, or `?status=add_new_card_fail&description=...`. Check the result with `usersCards()`. A user can have at most 5 registered cards. On staging, use cédula `9661000`.
+
 ### List User Cards
 
 ```php
 $response = $bancard->usersCards([
     'user_id' => '456',
+    'extra_response_attributes' => ['cards.bancard_proccesed'], // optional: adds bancard_proccesed (true/false) per card
 ]);
 
 foreach ($response->getCards() as $card) {
-    echo $card->card_masked_number;
+    echo $card->card_masked_number; // also card_id, card_brand, card_type, expiration_date, alias_token
 }
 ```
 
@@ -183,16 +197,20 @@ $response = $bancard->charge([
     'amount' => '10000.00',
     'currency' => Currency::PYG->value,
     'alias_token' => 'card_alias_token',
+    'description' => 'Order 7777777', // required by Bancard, max 20 chars
 ]);
 
-if ($response->isApproved()) {
-    // Payment successful
-}
-
-if ($response->is3dsRedirect()) {
-    // 3DS authentication required
+if ($response->requires3ds()) {
+    // Mount Bancard.Charge3DS.createForm('iframe-container', $response->get3dsProcessId(), {});
+    // the result arrives at the confirmation callback.
+} elseif ($response->isApproved()) {
+    $response->getAuthorizationNumber();
+} else {
+    $response->getResponseDescription();
 }
 ```
+
+`charge()` sends `number_of_payments: 1`, `additional_data: ""` and `extra_response_attributes: ["confirmation.process_id"]` (which enables 3DS detection) unless you pass other values. Pass `null` to omit one.
 
 ### Charge a Saved Card (Recurring Payments)
 
@@ -208,7 +226,7 @@ try {
         'shop_process_id' => '7777778',
         'amount' => 10000,
         'currency' => Currency::PYG,
-        'number_of_payments' => 1,
+        'description' => 'Monthly plan',
     ]);
 } catch (CardNotFoundException $e) {
     // Card was deleted or never registered for this user
@@ -295,6 +313,17 @@ Every exception extends `BancardException`, so one `catch (BancardException $e)`
 
 After a `NetworkException` on a payment the outcome is unknown: Bancard may have processed it. Check with `singleBuyGetConfirmation()` before retrying with the same `shop_process_id`.
 
+Error keys worth handling:
+
+| Key | Meaning |
+|---|---|
+| `DuplicatePaymentError` | Same card and amount charged in the last 5 minutes. |
+| `PaymentNotFoundError` | The customer has not paid this `shop_process_id` yet. |
+| `BuyNotFoundError` | No payment with that `shop_process_id`. |
+| `InvalidOperationError` | A field is missing or invalid (see `getMessage()`). |
+
+Bancard blocks a card at the commerce for 30 days after 7 rejected payments in 24 hours or 35 in 30 days ("MANDATO MC MAC 03 y 21"). Don't retry rejected payments automatically.
+
 ### Field Validation
 
 Fields are checked against the vPOS spec before sending, so mistakes fail locally with the field names instead of as `InvalidOperationError`:
@@ -302,8 +331,7 @@ Fields are checked against the vPOS spec before sending, so mistakes fail locall
 - Integers: `shop_process_id` (max 15 digits; rollback and billing cancel accept any string), `card_id` and `user_id` (max 19 digits)
 - Strings: `description` (20 chars), `currency` (3), `client_ruc` (32), URLs, `additional_data`, `alias_token`, `user_cell_phone` and `user_mail` (255)
 - Amounts: at most 13 integer digits and 2 decimals
-
-`charge()` and `chargeCard()` send `number_of_payments: 1` unless you pass another value (the spec requires 1 for debit cards).
+- Required fields set to `null` or `""` count as missing. `charge()` and `chargeCard()` require `description`: the spec omits it, but Bancard rejects charges without it.
 
 ## Amounts and Currency
 
@@ -354,11 +382,13 @@ vendor/bin/phpunit --testsuite smoke
 |---|---|
 | `BANCARD_STAGING_PUBLIC_KEY`, `BANCARD_STAGING_PRIVATE_KEY` | Required. Staging keys from the Bancard commerce portal. |
 | `BANCARD_STAGING_USER_ID` | Runs `users_cards`, and is used for `cards_new`. |
-| `BANCARD_STAGING_CARD_ID` | `card_id` of a card registered for that user. Runs `chargeCard()` (with and without the 3DS attribute), then rolls back. |
+| `BANCARD_STAGING_CARD_ID` | `card_id` of a card registered for that user. Runs `chargeCard()` (with and without the 3DS attribute) and `singleBuyGetConfirmation()` with extra attributes, then rolls back. |
 | `BANCARD_STAGING_RETURN_URL` | Return/cancel URL sent to Bancard (default `https://example.com/bancard/return`). |
 | `BANCARD_SMOKE_TEST_CLIENT=1` | Sends `test_client` so the runs don't count toward Bancard's staging test list. |
 
-To get a card for `BANCARD_STAGING_CARD_ID`, open the card registration iframe with the `process_id` that `cardsNew()` returns and register a staging test card.
+Keep the variables in `.env.smoke` (gitignored) and load them with `set -a; . ./.env.smoke; set +a`.
+
+To get a `BANCARD_STAGING_CARD_ID`, serve `tests/Smoke/register-card.php`, for example with `php -S localhost:8000 tests/Smoke/register-card.php` or through Valet. It reads `.env.smoke`, opens Bancard's card form, and after registration shows the `card_id` to use. On staging, the card `5418630110000014` (expiry `08/21`, CVV `258`) with cédula `9661000` works.
 
 Each request and response is written to `build/smoke/<run>/` with keys, tokens and alias tokens redacted, so real response shapes can be compared with what the SDK expects.
 

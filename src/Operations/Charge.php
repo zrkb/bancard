@@ -37,15 +37,25 @@ class Charge extends Operation
     }
 
     /**
+     * Get required fields.
+     *
+     * description is required by Bancard (staging answers "The parameter
+     * description is missing.") although the spec's field table omits it.
+     *
      * @return list<string>
      */
     protected function rules(): array
     {
-        return ['shop_process_id', 'amount', 'currency', 'alias_token'];
+        return ['shop_process_id', 'amount', 'currency', 'alias_token', 'description'];
     }
 
     /**
      * Get default values for fields missing from the payload.
+     *
+     * - number_of_payments: the spec requires 1 for debit cards.
+     * - additional_data: Bancard rejects charges without it, though the spec marks it optional.
+     * - extra_response_attributes: the spec says to always send confirmation.process_id,
+     *   which carries the 3DS process ID when authentication is needed.
      *
      * @return array<string, mixed>
      */
@@ -53,6 +63,8 @@ class Charge extends Operation
     {
         return [
             'number_of_payments' => 1,
+            'additional_data' => '',
+            'extra_response_attributes' => ['confirmation.process_id'],
         ];
     }
 
@@ -77,6 +89,7 @@ class Charge extends Operation
     {
         return [
             'currency' => 3,
+            'description' => 20,
             'alias_token' => 255,
             'additional_data' => 255,
             'return_url' => 255,

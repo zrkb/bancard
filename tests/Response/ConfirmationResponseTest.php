@@ -132,5 +132,46 @@ class ConfirmationResponseTest extends TestCase
         $this->assertNull($response->getTicketNumber());
         $this->assertNull($response->getSecurityInformation());
         $this->assertNull($response->getRiskIndex());
+        $this->assertNull($response->getExtraAttributes());
+        $this->assertNull($response->getPaymentCardType());
+    }
+
+    /**
+     * extra_attributes as staging returns it for extra_response_attributes ["confirmation.extra_attributes"].
+     */
+    public function testExtraAttributes(): void
+    {
+        $response = new ConfirmationResponse((object) [
+            'status' => 'success',
+            'confirmation' => (object) [
+                'response_code' => '00',
+                'extra_attributes' => (object) [
+                    'payment_card_type' => 'credit',
+                    'payment_card_brand' => 'MC',
+                    'payment_masked_card_number' => '541863******0014',
+                    'payment_origin' => 'VPOS-TOKEN',
+                ],
+            ],
+        ]);
+
+        $this->assertSame('credit', $response->getPaymentCardType());
+        $this->assertSame('MC', $response->getPaymentCardBrand());
+        $this->assertSame('541863******0014', $response->getPaymentMaskedCardNumber());
+        $this->assertSame('VPOS-TOKEN', $response->getPaymentOrigin());
+        $this->assertSame('credit', $response->getExtraAttributes()?->payment_card_type);
+    }
+
+    /**
+     * Extra attributes sent directly on the confirmation are read too.
+     */
+    public function testExtraAttributesOnConfirmation(): void
+    {
+        $response = new ConfirmationResponse((object) [
+            'confirmation' => (object) ['payment_card_type' => 'debit', 'payment_origin' => 'VPOS-FORM'],
+        ]);
+
+        $this->assertSame('debit', $response->getPaymentCardType());
+        $this->assertSame('VPOS-FORM', $response->getPaymentOrigin());
+        $this->assertNull($response->getPaymentCardBrand());
     }
 }

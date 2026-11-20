@@ -1,0 +1,26 @@
+{
+    "status": "success",
+    "confirmation": {
+        "token": null,
+        "process_id": "i5fn*lx6niQel0QzWK1g",
+        "shop_process_id": null,
+        "response": null,
+        "response_details": null,
+        "extended_response_description": null,
+        "currency": null,
+        "amount": null,
+        "authorization_number": null,
+        "ticket_number": null,
+        "iva_amount": null,
+        "iva_ticket_number": null,
+        "response_code": null,
+        "response_description": null,
+        "security_information": {
+            "customer_ip": null,
+            "card_source": null,
+            "card_country": null,
+            "version": null,
+            "risk_index": null
+        }
+    }
+}

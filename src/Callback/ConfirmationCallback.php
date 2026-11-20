@@ -48,9 +48,30 @@ class ConfirmationCallback
      */
     public function getInvoiceNumber(): ?string
     {
-        $data = self::objectValue($this->getBillingResponse()->data ?? null);
+        return self::stringValue($this->billingData()->invoice_number ?? null);
+    }
 
-        return self::stringValue($data->invoice_number ?? null);
+    /**
+     * Get the electronic invoice control code (CDC, 44 characters).
+     *
+     * @return string|null
+     */
+    public function getCdc(): ?string
+    {
+        $data = $this->billingData();
+
+        // The spec 1.25.1 example spells the key "cdc " (trailing space).
+        return self::stringValue($data->cdc ?? $data->{'cdc '} ?? null);
+    }
+
+    /**
+     * Get the billing_response.data element.
+     *
+     * @return \stdClass|null
+     */
+    private function billingData(): ?\stdClass
+    {
+        return self::objectValue($this->getBillingResponse()->data ?? null);
     }
 
     /**

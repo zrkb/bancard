@@ -196,6 +196,73 @@ trait ConfirmationDetails
     }
 
     /**
+     * Get the extra attributes element.
+     *
+     * Present when requested, e.g. get_confirmation with
+     * extra_response_attributes ["confirmation.extra_attributes"].
+     *
+     * @return \stdClass|null
+     */
+    public function getExtraAttributes(): ?\stdClass
+    {
+        return self::objectValue($this->confirmationData()->extra_attributes ?? null);
+    }
+
+    /**
+     * Get the payment card type: "credit", "debit" (Bancard debit card) or "account_debit" (PIX, some QR).
+     *
+     * @return string|null
+     */
+    public function getPaymentCardType(): ?string
+    {
+        return $this->extraAttribute('payment_card_type');
+    }
+
+    /**
+     * Get the payment card brand (e.g. "MC", "VS").
+     *
+     * @return string|null
+     */
+    public function getPaymentCardBrand(): ?string
+    {
+        return $this->extraAttribute('payment_card_brand');
+    }
+
+    /**
+     * Get the masked payment card number (e.g. "541863******0014").
+     *
+     * @return string|null
+     */
+    public function getPaymentMaskedCardNumber(): ?string
+    {
+        return $this->extraAttribute('payment_masked_card_number');
+    }
+
+    /**
+     * Get the flow the payment came from (e.g. "VPOS-FORM", "VPOS-TOKEN").
+     *
+     * @return string|null
+     */
+    public function getPaymentOrigin(): ?string
+    {
+        return $this->extraAttribute('payment_origin');
+    }
+
+    /**
+     * Read an extra attribute from extra_attributes, or from the confirmation itself.
+     *
+     * The fallback covers single_buy's extra_response_attributes (["payment_card_type"]),
+     * whose response placement the spec does not show.
+     *
+     * @param string $field Field name
+     * @return string|null
+     */
+    private function extraAttribute(string $field): ?string
+    {
+        return self::stringValue($this->getExtraAttributes()->{$field} ?? $this->confirmationData()->{$field} ?? null);
+    }
+
+    /**
      * Read a string field of the confirmation.
      *
      * @param string $field Field name

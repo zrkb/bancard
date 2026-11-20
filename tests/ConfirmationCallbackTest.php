@@ -136,6 +136,19 @@ class ConfirmationCallbackTest extends TestCase
     }
 
     /**
+     * The electronic invoice CDC is read from billing_response.data, including the spec example's "cdc " key.
+     */
+    public function testCdc(): void
+    {
+        $cdc = '01037455729001002000232012026093013946952949';
+        $billing = fn (array $data): array => ['billing_response' => ['status' => 'success', 'data' => $data]];
+
+        $this->assertSame($cdc, $this->bancard->parseConfirmation($this->body($billing(['cdc' => $cdc])))->getCdc());
+        $this->assertSame($cdc, $this->bancard->parseConfirmation($this->body($billing(['cdc ' => $cdc])))->getCdc());
+        $this->assertNull($this->bancard->parseConfirmation($this->body())->getCdc());
+    }
+
+    /**
      * A non-numeric risk index gives null.
      */
     public function testInvalidRiskIndexIsNull(): void

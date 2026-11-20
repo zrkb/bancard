@@ -37,6 +37,7 @@ class ChargeCardTest extends TestCase
             'shop_process_id' => '123',
             'amount' => 10000,
             'currency' => Currency::PYG,
+            'description' => 'Order 123',
             'number_of_payments' => 1,
         ]);
 
@@ -81,6 +82,7 @@ class ChargeCardTest extends TestCase
             'shop_process_id' => '123',
             'amount' => '10000.00',
             'currency' => 'PYG',
+            'description' => 'Order 123',
         ]);
 
         /** @var \GuzzleHttp\Psr7\Request $charge */
@@ -105,6 +107,7 @@ class ChargeCardTest extends TestCase
                 'shop_process_id' => '123',
                 'amount' => '10000.00',
                 'currency' => 'PYG',
+                'description' => 'Order 123',
             ]);
             $this->fail('Expected CardNotFoundException was not thrown.');
         } catch (CardNotFoundException $e) {
@@ -132,6 +135,7 @@ class ChargeCardTest extends TestCase
             'shop_process_id' => '123',
             'amount' => '10000.00',
             'currency' => 'PYG',
+            'description' => 'Order 123',
         ]);
     }
 
@@ -144,7 +148,28 @@ class ChargeCardTest extends TestCase
             $this->bancard->chargeCard([]); // @phpstan-ignore argument.type
             $this->fail('Expected ValidationException was not thrown.');
         } catch (ValidationException $e) {
-            $this->assertSame(['user_id', 'card_id', 'shop_process_id', 'amount', 'currency'], $e->getErrors());
+            $this->assertSame(['user_id', 'card_id', 'shop_process_id', 'amount', 'currency', 'description'], $e->getErrors());
+            $this->assertCount(0, $this->requestHistory);
+        }
+    }
+
+    /**
+     * An empty description is reported as missing before any request, as Bancard does.
+     */
+    public function testEmptyDescriptionThrowsBeforeAnyRequest(): void
+    {
+        try {
+            $this->bancard->chargeCard([
+                'user_id' => '789',
+                'card_id' => 1,
+                'shop_process_id' => '123',
+                'amount' => '10000.00',
+                'currency' => 'PYG',
+                'description' => '',
+            ]);
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $e) {
+            $this->assertSame(['description'], $e->getErrors());
             $this->assertCount(0, $this->requestHistory);
         }
     }
@@ -163,6 +188,7 @@ class ChargeCardTest extends TestCase
                 'shop_process_id' => '123',
                 'amount' => '10000.00',
                 'currency' => 'PYG',
+                'description' => 'Order 123',
             ]);
             $this->fail('Expected ApiException was not thrown.');
         } catch (ApiException $e) {

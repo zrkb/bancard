@@ -1,11 +1,24 @@
 {
     "status": "success",
     "confirmation": {
-        "shop_process_id": "123",
+        "token": "[generated token]",
+        "shop_process_id": 123,
+        "response": "S",
+        "response_details": "Procesado Satisfactoriamente",
+        "amount": "10000.00",
+        "currency": "PYG",
+        "authorization_number": "932557",
+        "ticket_number": "2119288713",
         "response_code": "00",
         "response_description": "Transaccion aprobada",
-        "authorization_number": "999888",
-        "ticket_number": "654321"
-    },
-    "messages": []
+        "extended_response_description": null,
+        "security_information": {
+            "card_source": "L",
+            "customer_ip": "203.0.113.10",
+            "card_country": "PARAGUAY",
+            "version": "0.3",
+            "risk_index": 0
+        },
+        "process_id": null
+    }
 }

@@ -24,7 +24,7 @@ class SpecLimitsTest extends TestCase
 {
     private const SINGLE_BUY = ['shop_process_id' => '123', 'amount' => '10000.00', 'currency' => 'PYG'];
 
-    private const CHARGE = self::SINGLE_BUY + ['alias_token' => 'alias123'];
+    private const CHARGE = self::SINGLE_BUY + ['alias_token' => 'alias123', 'description' => 'Order 123'];
 
     private const CARDS_NEW = [
         'card_id' => '1',
@@ -202,7 +202,7 @@ class SpecLimitsTest extends TestCase
         $this->mockResponse(200, $this->fixtureArray('users_cards_success'));
         $this->mockResponse(200, $this->fixtureArray('charge_success'));
 
-        $this->bancard->chargeCard(['user_id' => '789', 'card_id' => 1] + self::SINGLE_BUY);
+        $this->bancard->chargeCard(['user_id' => '789', 'card_id' => 1, 'description' => 'Order 123'] + self::SINGLE_BUY);
 
         /** @var \GuzzleHttp\Psr7\Request $charge */
         $charge = $this->requestHistory[1]['request'];

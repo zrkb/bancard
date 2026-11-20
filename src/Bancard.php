@@ -286,8 +286,13 @@ class Bancard
     /**
      * Query the confirmation status of a single buy.
      *
+     * Send extra_response_attributes ["confirmation.extra_attributes"] to get the
+     * card type, brand, masked number and payment origin (getPaymentCardType()...).
+     * Throws ApiException (PaymentNotFoundError) while the customer has not paid.
+     *
      * @param array{
      *   shop_process_id: int|string,
+     *   extra_response_attributes?: list<string>,
      * } $payload
      * @return ConfirmationResponse
      *
@@ -341,10 +346,14 @@ class Bancard
     }
 
     /**
-     * List the registered cards of a user.
+     * List the registered cards of a user (at most 5 per user).
+     *
+     * Send extra_response_attributes ["cards.bancard_proccesed"] to get whether
+     * each card is processed by Bancard.
      *
      * @param array{
      *   user_id: int|string,
+     *   extra_response_attributes?: list<string>,
      * } $payload
      * @return UsersCardsResponse
      *
@@ -360,14 +369,18 @@ class Bancard
     /**
      * Charge a registered card using its alias token.
      *
+     * Sends number_of_payments 1, additional_data "" and extra_response_attributes
+     * ["confirmation.process_id"] unless given. When requires3ds() is true, mount
+     * Bancard.Charge3DS.createForm() with get3dsProcessId().
+     *
      * @param array{
      *   shop_process_id: int|string,
      *   amount: int|float|string,
      *   currency: Currency|string,
      *   alias_token: string,
+     *   description: string,
      *   number_of_payments?: int,
      *   return_url?: string,
-     *   description?: string,
      *   additional_data?: string,
      *   iva_amount?: int|float|string,
      *   preauthorization?: string,
@@ -399,9 +412,9 @@ class Bancard
      *   shop_process_id: int|string,
      *   amount: int|float|string,
      *   currency: Currency|string,
+     *   description: string,
      *   number_of_payments?: int,
      *   return_url?: string,
-     *   description?: string,
      *   additional_data?: string,
      *   iva_amount?: int|float|string,
      *   preauthorization?: string,
@@ -418,8 +431,8 @@ class Bancard
     public function chargeCard(array $payload): ChargeResponse
     {
         $missing = array_values(array_filter(
-            ['user_id', 'card_id', 'shop_process_id', 'amount', 'currency'],
-            fn (string $field): bool => !isset($payload[$field])
+            ['user_id', 'card_id', 'shop_process_id', 'amount', 'currency', 'description'],
+            fn (string $field): bool => !isset($payload[$field]) || $payload[$field] === ''
         ));
 
         if ($missing !== []) {

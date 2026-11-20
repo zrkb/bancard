@@ -184,7 +184,10 @@ class StagingSmokeTest extends TestCase
     }
 
     /**
-     * chargeCard() with and without the 3DS attribute; a successful charge must parse as approved or declined.
+     * chargeCard() with the SDK defaults (3DS attribute included) and without the 3DS attribute.
+     *
+     * Each charge must be approved with a confirmation, get_confirmation must
+     * return extra_attributes when requested, and the charge is rolled back.
      */
     public function testChargeCardResponseShapes(): void
     {
@@ -192,8 +195,9 @@ class StagingSmokeTest extends TestCase
         $cardId = $this->requireEnv('BANCARD_STAGING_CARD_ID');
 
         $cases = [
-            'default' => [],
-            'with_3ds_attribute' => ['extra_response_attributes' => ['confirmation.process_id']],
+            // Distinct amounts: Bancard rejects the same card + amount within 5 minutes (DuplicatePaymentError).
+            'sdk_defaults' => ['amount' => '1001.00'],
+            'without_3ds_attribute' => ['amount' => '1002.00', 'extra_response_attributes' => null],
         ];
 
         foreach ($cases as $case => $fields) {
@@ -203,24 +207,31 @@ class StagingSmokeTest extends TestCase
                 'user_id' => $userId,
                 'card_id' => $cardId,
                 'shop_process_id' => $shopProcessId,
-                'amount' => self::AMOUNT,
                 'currency' => 'PYG',
+                'description' => 'SDK smoke test',
             ] + $fields + self::extra()));
 
             if ($result instanceof ApiException) {
-                $this->assertSame(
-                    'error',
-                    $result->getStatus(),
-                    "{$case}: charge response has no 'status'; ChargeResponse's shape assumption is likely wrong. See " . self::reportDir()
-                );
-            } else {
-                $this->assertNotNull(
-                    $result->getResponseCode(),
-                    "{$case}: successful charge has no confirmation.response_code; ChargeResponse's shape assumption is likely wrong. See " . self::reportDir()
+                $this->fail(
+                    "{$case}: charge failed ({$result->getErrorKey()}: {$result->getMessage()}). See " . self::reportDir()
                 );
             }
 
+            $this->assertNotNull(
+                $result->getResponseCode(),
+                "{$case}: charge has no confirmation.response_code; ChargeResponse's shape assumption is wrong. See " . self::reportDir()
+            );
+            $this->assertFalse($result->requires3ds(), "{$case}: the staging test card unexpectedly asked for 3DS.");
+
+            $confirmation = $this->attempt(fn () => $this->bancard->singleBuyGetConfirmation([
+                'shop_process_id' => $shopProcessId,
+                'extra_response_attributes' => ['confirmation.extra_attributes'],
+            ] + self::extra()));
+
             $this->attempt(fn () => (new SingleBuyRollback($this->bancard, ['shop_process_id' => $shopProcessId] + self::extra()))->execute());
+
+            $this->assertNotInstanceOf(ApiException::class, $confirmation, "{$case}: get_confirmation failed. See " . self::reportDir());
+            $this->assertNotNull($confirmation->getPaymentCardType(), "{$case}: get_confirmation has no extra_attributes. See " . self::reportDir());
         }
     }
 

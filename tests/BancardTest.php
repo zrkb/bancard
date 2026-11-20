@@ -366,6 +366,7 @@ class BancardTest extends TestCase
             'amount' => '10000.00',
             'currency' => 'PYG',
             'alias_token' => 'alias123',
+            'description' => 'Order 123',
         ]);
 
         $this->assertTrue($response->isSuccessful());

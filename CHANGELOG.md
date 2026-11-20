@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.7
+
+Verified against Bancard staging; updated for vPOS spec 1.25.1.
+
+### Behavior Changes
+
+- **`charge()`/`chargeCard()` require `description`** (max 20 characters). Bancard rejects charges without it ("The parameter description is missing.") even though the spec's field table omits it, so charges without it never worked.
+- **`charge()` sends `additional_data: ""` and `extra_response_attributes: ["confirmation.process_id"]` by default.** Bancard rejects charges without `additional_data` (marked optional in the spec), and the spec says to always request `confirmation.process_id` for 3DS. Pass `null` to omit either.
+- **Required fields set to `""` count as missing**, as Bancard reports them.
+
+### New
+
+- **3DS:** `ChargeResponse::requires3ds()` and `get3dsProcessId()`. 3DS is required when `confirmation.process_id` is set; mount `Bancard.Charge3DS.createForm()` with it.
+- **`ChargeResponse` confirmation getters:** `getShopProcessId()`, `getAuthorizationNumber()`, `getTicketNumber()`, `getResponseDescription()`, `getRiskIndex()` and more.
+- **Extra attributes (spec 1.24):** `getExtraAttributes()`, `getPaymentCardType()`, `getPaymentCardBrand()`, `getPaymentMaskedCardNumber()` and `getPaymentOrigin()`, for `singleBuyGetConfirmation()` with `extra_response_attributes: ["confirmation.extra_attributes"]`.
+- **`ConfirmationCallback::getCdc()`:** electronic invoice control code (spec 1.24).
+- **`extra_response_attributes` in payload shapes:** for `singleBuyGetConfirmation()` and `usersCards()` (`cards.bancard_proccesed`).
+- **`tests/Smoke/register-card.php`:** a page that registers a staging card for the smoke test.
+
+### Deprecated
+
+- **`ChargeResponse::getProcessId()`:** it returns the `shop_process_id`. Use `getShopProcessId()`; the 3DS process ID is `get3dsProcessId()`.
+- **`ChargeResponse::is3dsRedirect()`:** use `requires3ds()`. It now also returns true when `confirmation.process_id` is set; it used to check only `redirect_agent`, which the spec does not define.
+
+### Docs
+
+- **README:** the 3DS flow and the card registration result (`?status=add_new_card_success|add_new_card_fail`).
+- **Spec 1.23 to 1.25.1:** the 5-card limit per user, and QR/PIX in the payment form.
+- **Errors:** `DuplicatePaymentError` (same card and amount within 5 minutes), `PaymentNotFoundError`, and the card blocking rule after repeated rejections.
+
 ## 1.6
 
 ### New

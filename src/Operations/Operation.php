@@ -164,7 +164,8 @@ abstract class Operation
     /**
      * Ensure required fields are present and fields match the spec's types and limits.
      *
-     * Null counts as missing, since data() drops null values from the request.
+     * Null counts as missing, since data() drops null values from the request,
+     * and so does an empty string, which Bancard also reports as missing.
      *
      * @throws ValidationException When a required field is missing or a field is invalid
      */
@@ -173,7 +174,7 @@ abstract class Operation
         $missing = [];
 
         foreach ($this->rules() as $field) {
-            if (!isset($this->payload[$field])) {
+            if (!isset($this->payload[$field]) || $this->payload[$field] === '') {
                 $missing[] = $field;
             }
         }

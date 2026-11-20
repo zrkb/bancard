@@ -158,6 +158,7 @@ class PayloadNormalizationTest extends TestCase
             'amount' => '10000.00',
             'currency' => Currency::USD,
             'alias_token' => 'alias123',
+            'description' => 'Order 123',
         ]);
 
         $body = $this->getRequestBody();
