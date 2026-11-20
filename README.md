@@ -305,6 +305,36 @@ $normalized = Amount::normalize('10.5'); // "10.50" (null if invalid)
 
 See [UPGRADE.md](UPGRADE.md) for the migration guide.
 
+## Development
+
+```bash
+composer install
+vendor/bin/phpstan analyse
+vendor/bin/phpunit            # unit tests (mocked HTTP)
+```
+
+### Staging Smoke Test
+
+`tests/Smoke` runs real requests against Bancard staging. It is not part of the default suite or CI, and skips itself without credentials:
+
+```bash
+BANCARD_STAGING_PUBLIC_KEY=... \
+BANCARD_STAGING_PRIVATE_KEY=... \
+vendor/bin/phpunit --testsuite smoke
+```
+
+| Variable | Purpose |
+|---|---|
+| `BANCARD_STAGING_PUBLIC_KEY`, `BANCARD_STAGING_PRIVATE_KEY` | Required. Staging keys from the Bancard commerce portal. |
+| `BANCARD_STAGING_USER_ID` | Runs `users_cards`, and is used for `cards_new`. |
+| `BANCARD_STAGING_CARD_ID` | `card_id` of a card registered for that user. Runs `chargeCard()` (with and without the 3DS attribute), then rolls back. |
+| `BANCARD_STAGING_RETURN_URL` | Return/cancel URL sent to Bancard (default `https://example.com/bancard/return`). |
+| `BANCARD_SMOKE_TEST_CLIENT=1` | Sends `test_client` so the runs don't count toward Bancard's staging test list. |
+
+To get a card for `BANCARD_STAGING_CARD_ID`, open the card registration iframe with the `process_id` that `cardsNew()` returns and register a staging test card.
+
+Each request and response is written to `build/smoke/<run>/` with keys, tokens and alias tokens redacted, so real response shapes can be compared with what the SDK expects.
+
 ## Security
 
 If you discover any security related issues, please use the issue tracker.

@@ -2,10 +2,16 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
+         defaultTestSuite="unit"
          colors="true">
     <testsuites>
         <testsuite name="unit">
             <directory>tests</directory>
+            <exclude>tests/Smoke</exclude>
+        </testsuite>
+        <!-- Hits Bancard staging. Not run by default; select it with the testsuite option (see README). -->
+        <testsuite name="smoke">
+            <directory>tests/Smoke</directory>
         </testsuite>
     </testsuites>
     <source>
